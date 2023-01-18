@@ -11,6 +11,8 @@ use App\Http\Controllers\ResearchController;
 use App\Http\Controllers\CommentController;
 
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\NotificationController;
+
 
 
 
@@ -45,7 +47,7 @@ Route::get('/api/auth_user', [AuthController::class, 'authUser'])->middleware('j
 Route::prefix('/api')->group(function(){
     // Route::get('/auth_user', [AuthController::class, 'authUser']);
     //get user info
-    Route::get('/get_profile_info/{id}', [ProfileController::class, 'getProfileInfo']);
+    Route::get('/get_profile_info/{slug}', [ProfileController::class, 'getProfileInfo']);
     Route::get('/get_education/{id}', [ProfileController::class, 'getEducation']);
 
     //profile image
@@ -53,15 +55,26 @@ Route::prefix('/api')->group(function(){
     Route::post('/upload', [ProfileController::class, 'upload']);
 
     //edit profile info
-    Route::post('/edit_profile/{id}', [ProfileController::class, 'updateProfile']);
+    Route::post('/edit_profile', [ProfileController::class, 'updateProfile']);
 
     //create update profile info
     Route::post('/save_about/{id}', [ProfileController::class, 'about']);
     Route::post('/delete_about/{id}', [ProfileController::class, 'deleteAbout']);
-    Route::post('/save_education/{id}', [ProfileController::class, 'education']);
-    Route::post('/save_skills/{id}', [ProfileController::class, 'skills']);
-    Route::post('/save_interests/{id}', [ProfileController::class, 'interests']);
 
+    //Education
+    Route::post('/save_education', [ProfileController::class, 'saveEducation']);
+    Route::post('/update_education', [ProfileController::class, 'updateEducation']);
+    Route::post('/delete_education',[ProfileController::class,'deleteEducation']);
+
+    // skills
+    Route::get('/search_skills', [ProfileController::class, 'searchSkills']);
+    Route::post('/save_skills', [ProfileController::class, 'saveSkills']);
+    Route::post('/update_skills', [ProfileController::class, 'updateSkills']);
+
+
+    Route::post('/get_auth_user_info', [ProfileController::class, 'getAuthUserInfo']);
+
+    Route::post('/save_interests/{id}', [ProfileController::class, 'interests']);
     Route::get('/get_user_research/{slug}', [PostController::class, 'getUserResearch']);
     Route::get('/get_user_project/{slug}', [PostController::class, 'getUserProject']);
 
@@ -76,7 +89,7 @@ Route::prefix('/api')->group(function(){
     // Route::get('/view_attachment/{id}', [PostController::class, 'viewAttachment']);
     Route::post('/update_post', [PostController::class, 'updatePost']);
     Route::post('/delete_post', [PostController::class, 'deletePost']);
-    // Route::get('/post_abstract/{slug}', [PostController::class, 'postAbstract']);
+    Route::get('/post_abstract/{slug}', [PostController::class, 'postAbstract']);
 
     Route::post('/up_vote', [PostController::class, 'upVote']);
     Route::post('/down_vote', [PostController::class, 'downVote']);
@@ -120,7 +133,12 @@ Route::prefix('/api')->group(function(){
 
 
     Route::get('/get_departments', [HomeController::class, 'getDepartments']);
-    Route::get('/search_skills', [ProfileController::class, 'searchSkills']);
+
+    //Notification
+    Route::get('/get_notification', [NotificationController::class, 'getNotification']);
+    Route::post('/update_seenCount', [NotificationController::class, 'updateSeenCount']);
+    Route::post('/update_seen/{id}', [NotificationController::class, 'updateSeen']);
+
 
     Route::get('/banners', [HomeController::class, 'getBanner']);
     //for register

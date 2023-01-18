@@ -16,6 +16,7 @@ class CreatePostsTable extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id');
+            $table->string('user_name'); 
             $table->integer('department_id');
             $table->string('type'); 
             $table->string('slug')->unique();
@@ -25,7 +26,9 @@ class CreatePostsTable extends Migration
             $table->string('affiliation')->nullable();
             $table->string('attachment')->nullable();
             $table->boolean('isApproved')->default(0);
-            $table->timestamp('approved_at')->nullable();
+            $table->string('attachment')->nullable();
+            $table->timestamp('conference')->nullable();
+            $table->date('publication_date')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->timestamps();

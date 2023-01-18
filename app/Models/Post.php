@@ -13,6 +13,7 @@ class Post extends Model
     use Sluggable;
     protected $fillable = [
         'user_id',
+        'user_name',
         'department_id',
         'type',
         'slug',
@@ -21,6 +22,8 @@ class Post extends Model
         'url',
         'affiliation',
         'attachment',
+        'conference',
+        'publication_date',
         'start_date',
         'end_date',
         'isApproved',

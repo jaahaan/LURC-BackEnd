@@ -19,8 +19,8 @@ class CreateEducationTable extends Migration
             $table->string('institute');
             $table->string('degree');
             $table->string('fieldOfStudy');
-            $table->string('startDate');
-            $table->string('endDate')->nullable();
+            $table->date('start_date');
+            $table->date('end_date')->nullable();
             $table->string('grade')->nullable();
             $table->string('activities')->nullable();
             $table->timestamps();

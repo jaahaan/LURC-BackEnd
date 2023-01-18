@@ -22,6 +22,17 @@ class TeacherController extends Controller
     }
 
     public function AddTeacher(Request $request){
+        $this->validate($request, [
+            'email' => [
+                'required',
+                'max:50',
+                'email',
+                'unique:teachers,email',
+                'regex:/[a-z]?@lus\.ac\.bd/'
+            ],
+            'designation' => 'required',
+            'department' => 'required',
+        ]);
         $data = $request->all();
         return Teacher::create($data);
     }

@@ -108,10 +108,20 @@ class User extends Authenticatable implements JWTSubject
     {
        return $this->belongsTo('App\Models\Department','department_id','id');
     }
-    // public function comment(): HasMany
-    // {
-    //     return $this->hasMany(Comment::class, 'user_id');
+    // public function user_skills(){
+    //     return $this->belongsToMany('App\Models\Skill','user_skills');
     // }
+    public function user_skills(): BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'user_skills');
+    }
+    public function notification(){
+        return $this->belongsToMany('App\Models\Notify','post_user_id');
+    }
+    public function educations(): HasMany
+    {
+        return $this->hasMany(Education::class, 'user_id');
+    }
     // public function teams(): HasMany{
     //     return $this->hasMany(Team::class, 'owner_id','id');
     // }
@@ -130,10 +140,7 @@ class User extends Authenticatable implements JWTSubject
     // {
     //     return $this->hasMany(TeamPlayer::class, 'player_id');
     // }
-    // public function clubMembers(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(User::class, 'club_players', 'club_owner_id', 'player_id');
-    // }
+    
 
 
 }

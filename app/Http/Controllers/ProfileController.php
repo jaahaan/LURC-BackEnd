@@ -7,29 +7,47 @@ use App\Models\Education;
 use App\Models\Project;
 use App\Models\Publication;
 use App\Models\Skill;
+use App\Models\UserSkill;
 use App\Models\Post;
 
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Validator;
+
+date_default_timezone_set('Asia/Dhaka');
 
 class ProfileController extends Controller
 {
-    public function getProfileInfo($id)
+    public function getProfileInfo($slug)
     {
-        return User::where('id', $id)->with('department')->first();
+
+        $user = User::where('slug', $slug)->with('department', 'user_skills')->first();
+        $education = Education::where('user_id', $user->id)->orderBy('start_date', 'desc')->get();
+        $formattedData = [];
+        foreach($education as $value){            
+            $value['start_date'] = date('M Y', strtotime($value->start_date));
+            $value['end_date'] = date('M Y', strtotime($value->end_date));
+            $value['edit_start_date'] = date('Y-m-d', strtotime($value->start_date));
+            $value['edit_end_date'] = date('Y-m-d', strtotime($value->end_date));
+            array_push($formattedData, $value);
+            
+        }
+        return response()->json([
+            'success'=> true,
+            'education'=>$formattedData,
+            'user'=>$user,
+        ],200);
     }
-    public function getEducation($id)
-    {
-        return Education::where('user_id', $id)->get();
+    public function getAuthUserInfo(){
+        return User::where('id', Auth::user()->id)->with('user_skills')->first();
     }
 
-    public function updateProfile(Request $request, $id)
+    public function updateProfile(Request $request)
     {
         //validate request
         $this->validate($request, [
-            'id' => 'required',
             'name' => 'required',
             'designation' => 'required',
             'department' => 'required'
@@ -43,7 +61,7 @@ class ProfileController extends Controller
                 'department_id' => $request->department,
             ]);
         } else{
-            return User::where('id', $id)->update([
+            return User::where('id', Auth::user()->id)->update([
                 'name' => $request->name,
                 'image' => $request->image,
                 'designation' => $request->designation,
@@ -79,48 +97,127 @@ class ProfileController extends Controller
         
     }
 
-    public function education(Request $request, $id)
+    //Education
+    public function saveEducation(Request $request)
     {    
         //validate request
-        $this->validate($request, [
-            'id' => 'required',
+        
+        $validator = Validator::make($request->all(),
+        [
             'institute' => 'required',
             'degree' => 'required',
             'fieldOfStudy' => 'required',
-            'startMonth' => 'required',
-            'startYear' => 'required',
+            'start_date' => 'required',
         ]);
-        $data = $request->only('institute','degree','fieldOfStudy', 'startMonth', 'startYear','endMonth', 'endYear', 'grade', 'activities');
-        $test['education'] = json_encode($data);
-        $education = User::where('id', $id)->update($test);
 
-        // $education = Education::create([
-        //     'user_id' => $id,
-        //     'institute' => $request->institute,
-        //     'degree' => $request->degree,
-        //     'fieldOfStudy' => $request->fieldOfStudy,
-        //     'startDate' => $request->startMonth .' '. $request->startYear,
-        //     'endDate' => $request->endMonth .' '. $request->endYear,
-        //     'grade' => $request->grade,
-        //     'activities' => $request->activities,
-        // ]);    
+        if($validator->fails()){
+            return response()->json($validator->errors(), 422);
+        }
+
+        $education = Education::create([
+            'user_id' => Auth::user()->id,
+            'institute' => $request->institute,
+            'degree' => $request->degree,
+            'fieldOfStudy' => $request->fieldOfStudy,
+            'start_date' => date('Y-m-d H:i:s' , strtotime($request->start_date)),
+            'end_date'=> date('Y-m-d H:i:s' , strtotime($request->end_date)),
+            'grade' => $request->grade,
+            'activities' => $request->activities,
+        ]);    
 
         return response()->json(['msg' => 'Education Added Successfully.', 'status' => $education], 201);
     }
 
-    public function skills(Request $request, $id)
-    {
-        //validate request
-        $this->validate($request, [
-            'id' => 'required',
-            'skills' => 'required',
+    public function updateEducation(Request $request){
+        $validator = Validator::make($request->all(),
+        [
+            'institute' => 'required',
+            'degree' => 'required',
+            'fieldOfStudy' => 'required',
+            'start_date' => 'required',
         ]);
-        
-        return User::where('id', $id)->update([
-            'skills' => $request->skills,
+
+        if($validator->fails()){
+            return response()->json($validator->errors(), 422);
+        }
+        return Education::where('id', $request->id)->update([
+            'institute' => $request->institute,
+            'degree' => $request->degree,
+            'fieldOfStudy' => $request->fieldOfStudy,
+            'start_date' => date('Y-m-d H:i:s' , strtotime($request->start_date)),
+            'end_date'=> date('Y-m-d H:i:s' , strtotime($request->end_date)),
+            'grade' => $request->grade,
+            'activities' => $request->activities,
         ]);
-        
+        // $update = Education::where('id',$request->id)->first();
+        // return $update;
     }
+
+    public function deleteEducation(Request $request){
+        // return 'dine';
+        return Education::where('id',$request->id)->delete();
+    }
+    //Search Skills
+    public function searchSkills(Request $request){
+        $searchString= $request->keyword;
+        $limit = $request->limit? $request->limit : 5;
+
+        $skills = Skill::where('name', 'LIKE','%'.$searchString.'%')->limit($limit)->get();
+        return response()->json($skills);
+    }
+    
+    //create skills
+    public function saveSkills(Request $request)
+    {
+        $this->validate($request, [
+            'skill_id' => 'required',
+        ]);
+        $skills = $request->skill_id;
+        $skill_ids = [];
+
+        DB::beginTransaction();
+        try{
+        // insert authors
+        foreach ($skills as $s) {
+            array_push($skill_ids, ['user_id' =>  Auth::user()->id, 'skill_id' => $s]);
+        }
+        UserSkill::insert($skill_ids);
+        DB::commit();
+        return response()->json(['msg' => 'Added Successfully.'], 200);
+        } 
+
+        catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json(['msg' => 'Unsuccessfull!!'], 401);
+        }   
+    }
+    
+    // update skills
+    public function updateSkills(Request $request)
+    {
+        $this->validate($request, [
+            'skill_id' => 'required',
+        ]);
+        $skills = $request->skill_id;
+        $skill_ids = [];
+        DB::beginTransaction();
+        try {
+            // insert 
+            foreach ($skills as $s) {
+                array_push($skill_ids, ['user_id' =>  Auth::user()->id, 'skill_id' => $s]);
+            }
+            // delete all previous authors
+            UserSkill::where('user_id', Auth::user()->id)->delete();
+            UserSkill::insert($skill_ids);
+            
+            DB::commit();
+            return response()->json(['msg' => 'Skills Updated Successfully.'], 200);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json(['msg' => 'Unsuccessfully.'], 401);
+        }
+    }
+
 
     public function interests(Request $request, $id)
     {
@@ -156,10 +253,7 @@ class ProfileController extends Controller
         return response()->json(['msg' => 'Project Added Successfully.', 'status' => $project], 200);
 
     }
-    public function getProject($id)
-    {
-        return Project::where('user_id', $id)->get();
-    }
+    
     public function updateProject(Request $request)
     {
         //validate request
@@ -188,17 +282,6 @@ class ProfileController extends Controller
 
     }
 
-    
-
-    
-    public function searchSkills(Request $request){
-        $searchString= $request->keyword;
-        $limit = $request->limit? $request->limit : 5;
-
-        $skills = Skill::where('name', 'LIKE','%'.$searchString.'%')->limit($limit)->get();
-        return response()->json($skills);
-    }
-    
     //image upload
     public function upload(Request $request)
     {

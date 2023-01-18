@@ -23,7 +23,7 @@ class ResearchController extends Controller
         $default = $request->default;
         $order=$request->order;
 
-        $query =  Post::with('user', 'read', 'vote', 'like', 'authors', 'department', 'attachments');
+        $query =  Post::where('type', '!=', 'post')->with('user', 'read', 'vote', 'like', 'authors', 'department', 'attachments')->orderBy('id', 'asc');
 
         if($search){
             $query->where(function ($queryy) use ($search){
@@ -78,6 +78,7 @@ class ResearchController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
 
             if(!$check){
                 $post['read_count'] = 0;

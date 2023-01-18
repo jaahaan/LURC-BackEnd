@@ -11,26 +11,27 @@ use App\Models\Vote;
 use App\Models\Read;
 use App\Models\Like;
 use App\Models\Comment;
+use App\Models\Notify;
 
 use App\Models\Author;
 use App\Models\Attachment;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use DateTime;
 
 class PostController extends Controller
 {
     public function getAllPost(Request $request){
 
-        $limit = $request->limit? $request->limit : 5;
+        $limit = $request->limit? $request->limit : 4;
 
         // $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
-        $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->limit($limit)->get();
+        $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'asc')->limit($limit)->get();
 
         // $data = Post::with(['user', 'read', 'authors', 'attachments'])->orderBy('id', 'desc')->get();
 
         $formattedData = [];
-        foreach($data as $value){
-            $post = $value;
+        foreach($data as $post){
             $check = Read::where(['post_id'=>$post->id])->first();
             $voteCheck = Vote::where(['post_id'=>$post->id])->first();
             
@@ -49,8 +50,7 @@ class PostController extends Controller
                 $post['like_count'] =$post->like->like_count;
             } if($AuthLikeCheck){
                 $post['authUserLike'] = 'yes';
-            } 
-            if(!$likecheck){
+            } if(!$likecheck){
                 $post['like_count'] = 0;
             } if(!$AuthLikeCheck){
                 $post['authUserLike'] = 'no';
@@ -61,6 +61,9 @@ class PostController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
+            $post['start_date'] = date('M Y', strtotime($post->start_date));
+            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
 
             if(!$check){
                 $post['read_count'] = 0;
@@ -155,7 +158,21 @@ class PostController extends Controller
         $data = Post::where('slug',$slug)->first();
     
         $formattedData = [];
+        unset($data['user_name']);
+        unset($data['department_id']);
         unset($data['user_id']);
+        unset($data['slug']);
+        unset($data['title']);
+        unset($data['url']);
+        unset($data['affiliation']);
+        unset($data['attachment']);
+        unset($data['conference']);
+        unset($data['publication_date']);
+        unset($data['isApproved']);
+        unset($data['approved_at']);
+        unset($data['end_date']);
+        unset($data['start_date']);
+        unset($data['updated_at']);
         unset($data['created_at']);
         
         array_push($formattedData, $data);
@@ -189,8 +206,9 @@ class PostController extends Controller
             'url' => $request->url,
             'affiliation'=> $request->affiliation,
             'attachment'=> $request->attachment,
-            'start_date' => $request->start_date,
-            'end_date'=> $request->end_date,
+            'publication_date' => date('Y-m-d H:i:s' , strtotime($request->publication_date)),
+            'start_date' => date('Y-m-d H:i:s' , strtotime($request->start_date)),
+            'end_date'=> date('Y-m-d H:i:s' , strtotime($request->end_date)),
         ]);
 
         // insert authors
@@ -206,23 +224,25 @@ class PostController extends Controller
         // Attachment::insert($postImages);
         DB::commit();
         return response()->json(['msg' => 'Added Successfully.', 'status' => $post], 200);
-    } 
+        } 
 
-    catch (\Throwable $e) {
-        DB::rollback();
-        return response()->json(['msg' => 'Unsuccessfull!!'], 401);
-    }   
+        catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json(['msg' => 'Unsuccessfull!!'.$e], 401);
+        }   
     }
 
     public function upVote(Request $request){
         $checkUpVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'upVote'=>$request->upVote])->first();
         $checkDownVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->upVote])->first();
+        $post = Post::where('id',$request->id)->first();
 
         \Log::info('check');
         \Log::info($checkUpVote);
 
     	if ($checkUpVote) {
     		$data = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'upVote'=>$request->upVote])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
     		return response()->json([
                 'success'=> true,
                 'data'=> 'del',
@@ -230,6 +250,14 @@ class PostController extends Controller
 
     	} else if($checkDownVote){
     		Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->upVote])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
+            Notify::create([
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+	    	    'post_user_id' => $post->user_id,
+                'msg' =>  'up voted your '.$post->type,
+                'type' => 'upVote' 
+            ]);
             $data = Vote::create([
                 'user_id' => Auth::user()->id,
 	    	    'post_id' => $request->id,
@@ -245,6 +273,13 @@ class PostController extends Controller
 	    	    'post_id' => $request->id,
                 'upVote'=> $request->upVote,
             ]);
+            Notify::create([
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+	    	    'post_user_id' => $post->user_id,
+                'msg' =>  'up voted your '.$post->type,
+                'type' => 'upVote' 
+            ]);
             return response()->json([
                 'success'=> true,
                 'data'=> 'up',
@@ -257,12 +292,15 @@ class PostController extends Controller
     public function downVote(Request $request){
         $checkDownVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->downVote])->first();
         $checkUpVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'upVote'=>$request->downVote])->first();
+        $post = Post::where('id',$request->id)->first();
 
         \Log::info('$check');
         \Log::info($checkDownVote);
 
     	if ($checkDownVote) {
     		$data = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->downVote])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
+            
     		return response()->json([
                 'success'=> true,
                 'data'=> 'del',
@@ -275,6 +313,13 @@ class PostController extends Controller
 	    	    'post_id' => $request->id,
                 'downVote'=> $request->downVote,
             ]);
+            Notify::create([
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+	    	    'post_user_id' => $post->user_id,
+                'msg' =>  'down voted your '.$post->type,
+                'type' => 'downVote' 
+            ]);
             return response()->json([
                 'success'=> true,
                 'data'=> 'del_up',
@@ -284,6 +329,13 @@ class PostController extends Controller
                 'user_id' => Auth::user()->id,
 	    	    'post_id' => $request->id,
                 'downVote'=> $request->downVote,
+            ]);
+            Notify::create([
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+	    	    'post_user_id' => $post->user_id,
+                'msg' =>  'down voted your '.$post->type,
+                'type' => 'downVote' 
             ]);
             return response()->json([
                 'success'=> true,
@@ -309,17 +361,25 @@ class PostController extends Controller
 
         \Log::info('$check');
         \Log::info($checkLike);
+        $post = Post::where('id',$request->id)->first();
 
     	if ($checkLike) {
     		Like::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
     		return 'deleted';
     	} else{
+            Notify::create([
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+	    	    'post_user_id' => $post->user_id,
+                'msg' =>  'liked your '.$post->type,
+                'type' => 'like' 
+            ]);
             return Like::create([
                 'user_id' => Auth::user()->id,
 	    	    'post_id' => $request->id,
-            ]);
-        }
-        
+            ]);            
+        }        
     }
 
     public function getLikedUser(Request $request){
@@ -484,6 +544,10 @@ class PostController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
+            $post['publication_date'] = date('M Y', strtotime($post->publication_date));
+            $post['start_date'] = date('M Y', strtotime($post->start_date));
+            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
 
             if(!$check){
                 $post['read_count'] = 0;
@@ -553,6 +617,9 @@ class PostController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
+            $post['start_date'] = date('M Y', strtotime($post->start_date));
+            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
 
             if(!$check){
                 $post['read_count'] = 0;

@@ -9,6 +9,7 @@ use App\Models\Customer;
 use Auth;
 use Validator;
 use Illuminate\Support\Facades\Hash;
+date_default_timezone_set('Asia/Dhaka');
 
 class AuthController extends Controller
 {
@@ -193,6 +194,7 @@ class AuthController extends Controller
                     'token'=>$token,
                 ],200);
             }
+            // , ['exp' => Carbon\Carbon::now()->addDays(7)->timestamp]
             else{
                 return response()->json(['msg'=>'Invalid credentials'], 401);
             }
