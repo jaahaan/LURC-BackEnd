@@ -8,6 +8,7 @@ use App\Models\Banner;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+date_default_timezone_set('Asia/Dhaka');
 
 class HomeController extends Controller
 {
@@ -43,7 +44,27 @@ class HomeController extends Controller
             'data'=>$data,
         ],200);
     }
-    
+    public function getPeopleYouMayKnow(Request $request)
+    {
+        $limit = $request->limit? $request->limit : 3;
+        $department_id=  $request->department_id;
+        $query = User::with('department');
+        
+        if(!$department_id) {
+            $query->where('department_id', Auth::user()->department_id)
+                    ->orWhere('designation', Auth::user()->designation);
+            
+        }else if($department_id){
+            $query->where('department_id', $request->department_id);
+        } else if($query == []){
+            $query->orWhere('designation', Auth::user()->designation);
+        }
+        $data = $query->inRandomOrder()->limit($limit)->get();
+        return response()->json([
+            'success'=> true,
+            'data'=>$data,
+        ],200);
+    }
     public function admin(Request $request)
     {
         //first check if you are loggedin and admin user ...
@@ -53,16 +74,4 @@ class HomeController extends Controller
         return view('admin');
     }
 
-
-    // public function uploadImages(Request $request)
-    // {
-    //     request()->file('img')->store('uploads');
-    //     $pic = $request->img->hashName();
-    //     // $pic = "/uploads/$pic";
-    //     $url = env('APP_URL');
-    //     $pic = $url . "uploads/$pic";
-    //     return response()->json([
-    //         'image' => $pic
-    //     ], 200);
-    // }
 }

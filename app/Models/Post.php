@@ -13,6 +13,7 @@ class Post extends Model
     use Sluggable;
     protected $fillable = [
         'user_id',
+        'count',
         'user_name',
         'department_id',
         'type',

@@ -9,6 +9,9 @@ use App\Models\Publication;
 use App\Models\Skill;
 use App\Models\UserSkill;
 use App\Models\Post;
+use App\Models\Vote;
+use App\Models\Read;
+use App\Models\Like;
 
 use App\Models\Teacher;
 use Illuminate\Http\Request;
@@ -20,6 +23,10 @@ date_default_timezone_set('Asia/Dhaka');
 
 class ProfileController extends Controller
 {
+    public function getUser(Request $request)
+    {
+        return User::get();
+    }
     public function getProfileInfo($slug)
     {
 
@@ -84,6 +91,7 @@ class ProfileController extends Controller
         
     }
 
+
     public function deleteAbout(Request $request, $id)
     {
         //validate request
@@ -127,7 +135,6 @@ class ProfileController extends Controller
 
         return response()->json(['msg' => 'Education Added Successfully.', 'status' => $education], 201);
     }
-
     public function updateEducation(Request $request){
         $validator = Validator::make($request->all(),
         [
@@ -152,12 +159,12 @@ class ProfileController extends Controller
         // $update = Education::where('id',$request->id)->first();
         // return $update;
     }
-
     public function deleteEducation(Request $request){
         // return 'dine';
         return Education::where('id',$request->id)->delete();
     }
-    //Search Skills
+
+    //Skills
     public function searchSkills(Request $request){
         $searchString= $request->keyword;
         $limit = $request->limit? $request->limit : 5;
@@ -165,7 +172,9 @@ class ProfileController extends Controller
         $skills = Skill::where('name', 'LIKE','%'.$searchString.'%')->limit($limit)->get();
         return response()->json($skills);
     }
-    
+    public function getSkills(Request $request){
+        return Skill::get();
+    }
     //create skills
     public function saveSkills(Request $request)
     {
@@ -232,56 +241,6 @@ class ProfileController extends Controller
         ]);    
     }
 
-    public function saveProject(Request $request, $id)
-    {
-        
-        //validate request
-        $this->validate($request, [
-            'project_name' => 'required',
-            'project_type' => 'required',
-        ]);
-       
-        $project =  Project::create([
-            'user_id' => $id,
-            'project_name' => $request->project_name,
-            'project_type' => $request->project_type,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'project_url' => $request->project_url,
-            'project_description' => $request->project_description,
-        ]);   
-        return response()->json(['msg' => 'Project Added Successfully.', 'status' => $project], 200);
-
-    }
-    
-    public function updateProject(Request $request)
-    {
-        //validate request
-        $this->validate($request, [
-            'user_id' => 'required',
-            'project_name' => 'required',
-            'project_type' => 'required',
-        ]);
-        $update_project = Project::where('id', $request->id)->update([
-            'user_id' => $request->user_id,
-            'project_name' => $request->project_name,
-            'project_type' => $request->project_type,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'project_url' => $request->project_url,
-            'project_description' => $request->project_description,
-        ]);
-        return response()->json(['msg' => 'Project Updateded Successfully.', 'status' => $update_project], 200);
-
-    }
-
-    public function deleteProject($id)
-    {
-        $delete_project = Project::where('id', $id)->delete();
-        return response()->json(['msg' => 'Project Deleted Successfully.', 'status' => $delete_project], 200);
-
-    }
-
     //image upload
     public function upload(Request $request)
     {
@@ -310,73 +269,149 @@ class ProfileController extends Controller
         
     }
     
-    public function getTeacherInfo()
+    
+    //User Research Items
+    public function getUserResearch(Request $request, $slug)
     {
-        return Teacher::get()->all();
+        $user = User::where('slug',$slug)->first();
+        $limit = $request->limit? $request->limit : 5;
+        $data =  Post::where('user_id', $user->id)->where('type','!=', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
+        $formattedData = [];
+        foreach($data as $value){
+            $post = $value;
+            $check = Read::where(['post_id'=>$post->id])->first();
+            $voteCheck = Vote::where(['post_id'=>$post->id])->first();
+            
+            $checkUpVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id, 'upVote'=>1])->first();
+            $checkDownVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id, 'downVote'=>1])->first();
+            $likecheck = Like::where(['post_id'=>$post->id])->first();
+            $AuthLikeCheck = Like::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id])->first();
+
+            if($checkUpVote){
+                $post['authUserVote']= "up";
+            } if($checkDownVote){
+                $post['authUserVote']= "down";
+            } if(!$checkUpVote && !$checkDownVote){
+                $post['authUserVote']= "none";
+            } if($likecheck){
+                $post['like_count'] =$post->like->like_count;
+            } if($AuthLikeCheck){
+                $post['authUserLike'] = 'yes';
+            } 
+            if(!$likecheck){
+                $post['like_count'] = 0;
+            } if(!$AuthLikeCheck){
+                $post['authUserLike'] = 'no';
+            } 
+            if(!$check){
+                $post['read_count'] = 0;
+            } 
+            if($check){
+                $post['read_count'] = $post->read->read_count;
+            } if(!$voteCheck){
+                $post['upVote'] = 0;
+                $post['downVote'] = 0;
+                $post['avgVote'] = 0;
+            }  if($voteCheck){
+                $post['upVote'] = $post->vote->upVote;
+                $post['avgVote'] = $post->vote->upVote - $post->vote->downVote;
+                $post['downVote'] = $post->vote->downVote;
+            }
+            $post['image'] = $post->user->image;
+            $post['name'] = $post->user->name;
+            $post['user_slug'] = $post->user->slug;
+            $post['department'] = $post->user->department;
+            $post['designation'] = $post->user->designation;
+            $post['publication_date'] = date('M Y', strtotime($post->publication_date));
+            $post['start_date'] = date('M Y', strtotime($post->start_date));
+            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
+
+            
+            unset($post['vote']);
+            unset($post['user']);
+            unset($post['read']);
+            unset($post['like']);
+
+            array_push($formattedData, $post);
+
+        }
+        return response()->json([
+            'success'=> true,
+            'data'=>$formattedData,
+        ],200);
     }
 
-    public function addTeacher(Request $request)
-    {    
-        //validate request
-        $this->validate($request, [
-            'email' => [
-                'required',
-                'max:50',
-                'email',
-                'unique:teachers,email',
-                'regex:/[a-z]+(_cse)?@lus\.ac\.bd/'
-            ],
-            'designation' => 'required',
-            'department' => 'required',
-        ],[
-            'email.regex' => 'Please provide Institutional email!!',
-        ]);
-        $teacher = Teacher::create([
-            'email' => $request->email,
-            'department' => $request->department,
-            'designation' => $request->designation,
-        ]);    
+    //User Projects
+    public function getUserProject(Request $request, $slug)
+    {
+        $user = User::where('slug',$slug)->first();
+        $limit = $request->limit? $request->limit : 5;
+        $data =  Post::where('user_id', $user->id)->where('type', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
 
-        return response()->json(['msg' => 'Teacher Added Successfully.', 'status' => $teacher], 201);
+        $formattedData = [];
+        
+        foreach($data as $value){
+            $post = $value;
+            $check = Read::where(['post_id'=>$post->id])->first();
+            $voteCheck = Vote::where(['post_id'=>$post->id])->first();
+            
+            $checkUpVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id, 'upVote'=>1])->first();
+            $checkDownVote = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id, 'downVote'=>1])->first();
+            $likecheck = Like::where(['post_id'=>$post->id])->first();
+            $AuthLikeCheck = Like::where(['user_id'=>Auth::user()->id,'post_id'=>$post->id])->first();
+
+            if($checkUpVote){
+                $post['authUserVote']= "up";
+            } if($checkDownVote){
+                $post['authUserVote']= "down";
+            } if(!$checkUpVote && !$checkDownVote){
+                $post['authUserVote']= "none";
+            } if($likecheck){
+                $post['like_count'] =$post->like->like_count;
+            } if($AuthLikeCheck){
+                $post['authUserLike'] = 'yes';
+            } 
+            if(!$likecheck){
+                $post['like_count'] = 0;
+            } if(!$AuthLikeCheck){
+                $post['authUserLike'] = 'no';
+            } 
+            if(!$check){
+                $post['read_count'] = 0;
+            } 
+            if($check){
+                $post['read_count'] = $post->read->read_count;
+            } if(!$voteCheck){
+                $post['upVote'] = 0;
+                $post['downVote'] = 0;
+                $post['avgVote'] = 0;
+            }  if($voteCheck){
+                $post['upVote'] = $post->vote->upVote;
+                $post['avgVote'] = $post->vote->upVote - $post->vote->downVote;
+                $post['downVote'] = $post->vote->downVote;
+            }
+            $post['image'] = $post->user->image;
+            $post['name'] = $post->user->name;
+            $post['user_slug'] = $post->user->slug;
+            $post['department'] = $post->user->department;
+            $post['designation'] = $post->user->designation;
+            $post['start_date'] = date('M Y', strtotime($post->start_date));
+            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            $post['edit_start_date'] = date('Y-m-d', strtotime($post->start_date));
+            $post['edit_end_date'] = date('Y-m-d', strtotime($post->end_date));
+            $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
+            unset($post['vote']);
+            unset($post['user']);
+            unset($post['read']);
+            unset($post['like']);
+
+            array_push($formattedData, $post);
+
+        }
+        return response()->json([
+            'success'=> true,
+            'data'=>$formattedData,
+        ],200);
     }
-    public function editTeacher(Request $request)
-    {    
-        //validate request
-        $this->validate($request, [
-            'edit_id' => 'required',
-            'email' => [
-                'required',
-                'max:50',
-                'email',
-                'unique:teachers,email',
-                'regex:/[a-z]+(_cse)?@lus\.ac\.bd/'
-            ],
-            'designation' => 'required',
-            'department' => 'required',
-        ],[
-            'email.regex' => 'Please provide Institutional email!!',
-        ]);
-        $teacher = Teacher::where('id', $request->edit_id)->update([
-            'email' => $request->email,
-            'department' => $request->department,
-            'designation' => $request->designation,
-        ]);    
-
-        return response()->json(['msg' => 'Teacher updated Successfully.', 'status' => $teacher], 200);
-    }
-
-
-    // public function deleteFileFromServer($fileName)
-    // {
-    //     $filePath = public_path() . '/profileImages/' . $fileName;
-    //     // return $filePath;
-    //     // if (!$hasFullPath) {
-    //     //     $filePath = public_path() . '/profileImages/' . $fileName;
-    //     // }
-    //     if (file_exists($filePath)) {
-    //         @unlink($filePath);
-    //     }
-    //     return;
-    // }
-
 }

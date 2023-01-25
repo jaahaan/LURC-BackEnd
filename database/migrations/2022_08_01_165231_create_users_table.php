@@ -22,7 +22,7 @@ class CreateUsersTable extends Migration
             $table->string('department');
             $table->integer('department_id')->nullable();
             $table->string('designation');
-            $table->string('image')->default('/profileImages/download.jpg');
+            $table->string('image')->default('http://localhost:8000/profileImages/download.jpg');
             $table->text('about')->nullable();
             $table->json('education')->nullable();
             $table->text('skills')->nullable();

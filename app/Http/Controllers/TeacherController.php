@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Teacher;
 
 use Illuminate\Http\Request;
+date_default_timezone_set('Asia/Dhaka');
 
 class TeacherController extends Controller
 {

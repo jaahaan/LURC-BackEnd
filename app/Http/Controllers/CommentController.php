@@ -10,6 +10,9 @@ use App\Models\CommentLike;
 use App\Models\Comment;
 use App\Models\CommentReply;
 use App\Models\CommentReplyLike;
+use App\Notifications\PostNotification;
+
+date_default_timezone_set('Asia/Dhaka');
 
 class CommentController extends Controller
 {
@@ -101,6 +104,11 @@ class CommentController extends Controller
     }
 
     public function addComment(Request $request){
+        $post = Post::where('id',$request->id)->first();
+        $authUser = Auth::user();
+        $postUser = $post->user;
+        $msg = "commented your";
+        $postUser->notify(new PostNotification($authUser, $post, $msg));
         return Comment::create([
             'user_id' => Auth::user()->id,
             'post_id' => $request->id,
@@ -110,6 +118,14 @@ class CommentController extends Controller
 
     //Comment Reply
     public function addCommentReply(Request $request){
+        $post = Post::where('id',$request->post_id)->first();
+        $comment = Comment::where('id',$request->comment_id)->first();
+
+        $authUser = Auth::user();
+        $postUser = $post->user;
+        $commentUser = $comment->user;
+        $msg = "replied your comment";
+        $commentUser->notify(new PostNotification($authUser, $post, $msg));
         return CommentReply::create([
             'user_id' => Auth::user()->id,
             'post_id' => $request->post_id,

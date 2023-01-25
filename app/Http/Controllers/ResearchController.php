@@ -11,6 +11,7 @@ use Auth;
 // use App\Models\Author;
 // use App\Models\Attachment;
 use Illuminate\Http\Request;
+date_default_timezone_set('Asia/Dhaka');
 
 class ResearchController extends Controller
 {
@@ -23,7 +24,7 @@ class ResearchController extends Controller
         $default = $request->default;
         $order=$request->order;
 
-        $query =  Post::where('type', '!=', 'post')->with('user', 'read', 'vote', 'like', 'authors', 'department', 'attachments')->orderBy('id', 'asc');
+        $query =  Post::where('type', '!=', 'post')->with('user', 'read', 'vote', 'like', 'authors', 'department', 'attachments');
 
         if($search){
             $query->where(function ($queryy) use ($search){
@@ -41,7 +42,6 @@ class ResearchController extends Controller
         }
 
         $data = $query->limit($limit)->get();
-
 
         $formattedData = [];
         foreach($data as $value){
