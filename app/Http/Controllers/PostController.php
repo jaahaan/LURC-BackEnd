@@ -33,9 +33,6 @@ class PostController extends Controller
         $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
         // $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->inRandomOrder()->limit($limit)->get();
         
-
-
-
         $formattedData = [];
         foreach($data as $post){
             $check = Read::where(['post_id'=>$post->id])->first();
@@ -464,7 +461,7 @@ class PostController extends Controller
 
     public function read($id){
         $check = Read::where(['user_id'=>Auth::user()->id,'post_id'=>$id])->first();
-        $post = Post::where('id', $id)->first;
+        $post = Post::where('id', $id)->first();
     	if (!$check) {
             $count = $post->count + 1;
             Post::where('id', $post->id)->update([

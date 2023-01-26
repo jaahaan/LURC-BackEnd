@@ -35,7 +35,14 @@ class ConnectionController extends Controller
             'data' => $data
         ]);
     }
-
+    public function getAuthUserConnection(Request $request){
+        $query = Connection::where('connected', 1)->with('user1', 'user2');
+        $data = $query->where('sent_request_user', Auth::user()->id)->orWhere('received_request_user', Auth::user()->id)->get();
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
     public function connectionStatus(Request $request){
 
         $user = User::where('slug', $request->slug)->first();

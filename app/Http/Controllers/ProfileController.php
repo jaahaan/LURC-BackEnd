@@ -77,32 +77,25 @@ class ProfileController extends Controller
         }
     }
 
-    public function about(Request $request, $id)
+    public function updateAbout(Request $request)
     {
         //validate request
         $this->validate($request, [
-            'id' => 'required',
             'about' => 'required',
         ]);
         
-        return User::where('id', $id)->update([
+        return User::where('id', Auth::user()->id)->update([
             'about' => $request->about,
         ]);
         
     }
 
 
-    public function deleteAbout(Request $request, $id)
+    public function deleteAbout(Request $request)
     {
-        //validate request
-        $this->validate($request, [
-            'id' => 'required',
-        ]);
-        
-        return User::where('id', $id)->update([
+        return User::where('id', Auth::user()->id)->update([
             'about' => null,
         ]);
-        
     }
 
     //Education

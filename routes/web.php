@@ -59,8 +59,8 @@ Route::prefix('/api')->group(function(){
     Route::post('/edit_profile', [ProfileController::class, 'updateProfile']);
 
     //create update profile info
-    Route::post('/save_about/{id}', [ProfileController::class, 'about']);
-    Route::post('/delete_about/{id}', [ProfileController::class, 'deleteAbout']);
+    Route::post('/update_about', [ProfileController::class, 'updateAbout']);
+    Route::post('/delete_about', [ProfileController::class, 'deleteAbout']);
 
     //Education
     Route::post('/save_education', [ProfileController::class, 'saveEducation']);
@@ -78,7 +78,8 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_user_research/{slug}', [ProfileController::class, 'getUserResearch']);
     Route::get('/get_user_project/{slug}', [ProfileController::class, 'getUserProject']);
     Route::get('/get_user_post/{slug}', [ProfileController::class, 'getUserPost']);
-    Route::get('/get_user_connection', [Connection::class, 'getUserConnection']);
+    Route::get('/get_user_connection', [ConnectionController::class, 'getUserConnection']);
+    Route::get('/get_auth_user_connection', [ConnectionController::class, 'getAuthUserConnection']);
 
     //Attachment
     Route::post('/upload_attachment', [PostController::class, 'uploadAttachment']);
