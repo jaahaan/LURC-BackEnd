@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\Banner;
+use App\Models\Connection;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +26,7 @@ class HomeController extends Controller
     }
     public function search(Request $request){
         $searchString= $request->keyword;
-        $limit = $request->limit? $request->limit : 5;
+        $limit = $request->limit? $request->limit : 3;
 
         $users = User::where('name', 'LIKE','%'.$searchString.'%')->limit($limit)->get();
         return response()->json($users);
@@ -39,10 +40,11 @@ class HomeController extends Controller
     public function getDepartments(Request $request)
     {
         $data = Department::get();
-        return response()->json([
-            'success'=> true,
-            'data'=>$data,
-        ],200);
+        // return response()->json([
+        //     'success'=> true,
+        //     'data'=>$data,
+        // ],200);
+        return $data;
     }
     public function getPeopleYouMayKnow(Request $request)
     {
@@ -50,19 +52,47 @@ class HomeController extends Controller
         $department_id=  $request->department_id;
         $query = User::with('department');
         
-        if(!$department_id) {
-            $query->where('department_id', Auth::user()->department_id)
-                    ->orWhere('designation', Auth::user()->designation);
+        // if(!$department_id) {
+        //     $query->where('department_id', Auth::user()->department_id)
+        //     ->orWhere('designation', Auth::user()->designation);           
+        // } else if($department_id) {
+        //     $query->where('department_id', $request->department_id);
+        // } else if($query == []) {
+        //     $query->orWhere('designation', Auth::user()->designation);
+        // }
+        $data = $query->inRandomOrder()->get();
+        \Log::info('getPeopleYouMayKnow');
+        \Log::info($data);
+
+        $formattedData = [];
+        $formattedData1 = [];
+
+        foreach($data as $value){
+            $connected1 = Connection::
+                    where('sent_request_user', Auth::user()->id)
+                    ->where('received_request_user', $value->id)->first();
+            $connected2 = Connection::
+                    where('sent_request_user', $value->id)
+                    ->where('received_request_user', Auth::user()->id)->first();
+            \Log::info('connected1');
+            \Log::info($connected1);
+            \Log::info('connected2');
+            \Log::info($connected2);
+            $value['status'] = "connect";
             
-        }else if($department_id){
-            $query->where('department_id', $request->department_id);
-        } else if($query == []){
-            $query->orWhere('designation', Auth::user()->designation);
+            if($connected1 || $connected2 || $value->id == Auth::user()->id){
+                array_push($formattedData1, $value);
+            } else{
+                if (count($formattedData) > 2) {
+                    break;
+                }
+                array_push($formattedData, $value);
+            }
         }
-        $data = $query->inRandomOrder()->limit($limit)->get();
+        
         return response()->json([
             'success'=> true,
-            'data'=>$data,
+            'data'=>$formattedData,
         ],200);
     }
     public function admin(Request $request)

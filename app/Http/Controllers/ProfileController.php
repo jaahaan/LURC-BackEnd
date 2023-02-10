@@ -27,19 +27,39 @@ class ProfileController extends Controller
     {
         return User::get();
     }
+    public function getProfileHeaderInfo($slug)
+    {
+
+        $user = User::where('slug', $slug)->with('department')->first();
+        unset($user['about']);
+        unset($user['interests']);
+        unset($user['isActive']);
+        unset($user['passwordToken']);
+        unset($user['token_expired_at']);
+        unset($user['honors_and_awards']);
+        unset($user['updated_at']);
+        unset($user['created_at']);
+        return response()->json([
+            'success'=> true,
+            'user'=>$user,
+        ],200);
+    }
     public function getProfileInfo($slug)
     {
 
         $user = User::where('slug', $slug)->with('department', 'user_skills')->first();
         $education = Education::where('user_id', $user->id)->orderBy('start_date', 'desc')->get();
         $formattedData = [];
-        foreach($education as $value){            
-            $value['start_date'] = date('M Y', strtotime($value->start_date));
-            $value['end_date'] = date('M Y', strtotime($value->end_date));
-            $value['edit_start_date'] = date('Y-m-d', strtotime($value->start_date));
-            $value['edit_end_date'] = date('Y-m-d', strtotime($value->end_date));
-            array_push($formattedData, $value);
-            
+        foreach($education as $value){
+            if($value['start_date'] != null){
+                $value['start_date'] = date('M Y', strtotime($value->start_date));
+                $value['edit_start_date'] = date('Y-m-d', strtotime($value->start_date));
+            }            
+            if($value['end_date'] != null){
+                $value['end_date'] = date('M Y', strtotime($value->end_date));
+                $value['edit_end_date'] = date('Y-m-d', strtotime($value->end_date));
+            }  
+            array_push($formattedData, $value);  
         }
         return response()->json([
             'success'=> true,
@@ -120,8 +140,8 @@ class ProfileController extends Controller
             'institute' => $request->institute,
             'degree' => $request->degree,
             'fieldOfStudy' => $request->fieldOfStudy,
-            'start_date' => date('Y-m-d H:i:s' , strtotime($request->start_date)),
-            'end_date'=> date('Y-m-d H:i:s' , strtotime($request->end_date)),
+            'start_date' => $request->start_date,
+            'end_date'=> $request->end_date,
             'grade' => $request->grade,
             'activities' => $request->activities,
         ]);    
@@ -144,8 +164,8 @@ class ProfileController extends Controller
             'institute' => $request->institute,
             'degree' => $request->degree,
             'fieldOfStudy' => $request->fieldOfStudy,
-            'start_date' => date('Y-m-d H:i:s' , strtotime($request->start_date)),
-            'end_date'=> date('Y-m-d H:i:s' , strtotime($request->end_date)),
+            'start_date' => $request->start_date,
+            'end_date'=> $request->end_date,
             'grade' => $request->grade,
             'activities' => $request->activities,
         ]);
@@ -264,11 +284,11 @@ class ProfileController extends Controller
     
     
     //User Research Items
-    public function getUserResearch(Request $request, $slug)
+    public function getUserResearch(Request $request)
     {
-        $user = User::where('slug',$slug)->first();
-        $limit = $request->limit? $request->limit : 5;
-        $data =  Post::where('user_id', $user->id)->where('type','!=', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
+        $user = User::where('slug', $request->slug)->first();
+        $limit = $request->limit? $request->limit : 3;
+        $data =  Post::where('user_id', $user->id)->where('type','!=', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'images'])->orderBy('id', 'desc')->limit($limit)->get();
         $formattedData = [];
         foreach($data as $value){
             $post = $value;
@@ -315,9 +335,14 @@ class ProfileController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
-            $post['publication_date'] = date('M Y', strtotime($post->publication_date));
-            $post['start_date'] = date('M Y', strtotime($post->start_date));
-            $post['end_date'] = date('M Y', strtotime($post->end_date));
+            if($post['publication_date']!=null)
+            {
+                $post['publication_date'] = date('M Y', strtotime($post->publication_date));
+                $post['edit_publication_date'] = date('Y-m', strtotime($post->publication_date));
+            }
+            
+            // $post['start_date'] = date('M Y', strtotime($post->start_date));
+            // $post['end_date'] = date('M Y', strtotime($post->end_date));
             $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
 
             
@@ -340,7 +365,7 @@ class ProfileController extends Controller
     {
         $user = User::where('slug',$slug)->first();
         $limit = $request->limit? $request->limit : 5;
-        $data =  Post::where('user_id', $user->id)->where('type', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->orderBy('id', 'desc')->limit($limit)->get();
+        $data =  Post::where('user_id', $user->id)->where('type', 'project')->with(['user', 'read', 'vote', 'like', 'authors', 'images'])->orderBy('id', 'desc')->limit($limit)->get();
 
         $formattedData = [];
         
@@ -389,10 +414,17 @@ class ProfileController extends Controller
             $post['user_slug'] = $post->user->slug;
             $post['department'] = $post->user->department;
             $post['designation'] = $post->user->designation;
-            $post['start_date'] = date('M Y', strtotime($post->start_date));
-            $post['end_date'] = date('M Y', strtotime($post->end_date));
-            $post['edit_start_date'] = date('Y-m-d', strtotime($post->start_date));
-            $post['edit_end_date'] = date('Y-m-d', strtotime($post->end_date));
+            if($post['start_date']!=null){
+                $post['start_date'] = date('M Y', strtotime($post->start_date));
+                $post['edit_start_date'] = date('Y-m', strtotime($post->start_date));
+            }
+            if($post['end_date']!=null){
+                $post['end_date'] = date('M Y', strtotime($post->end_date));
+                $post['edit_end_date'] = date('Y-m', strtotime($post->end_date));
+            }
+            
+            // $post['edit_start_date'] = date('Y-m', strtotime($post->start_date));
+            // $post['edit_end_date'] = date('Y-m', strtotime($post->end_date));
             $post['formatedDateTime'] = date('M Y', strtotime($post->created_at));
             unset($post['vote']);
             unset($post['user']);

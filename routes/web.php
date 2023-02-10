@@ -48,12 +48,13 @@ Route::get('/api/auth_user', [AuthController::class, 'authUser'])->middleware('j
 Route::prefix('/api')->group(function(){
     // Route::get('/auth_user', [AuthController::class, 'authUser']);
     //get user info
+    Route::get('/get_profile_header_info/{slug}', [ProfileController::class, 'getProfileHeaderInfo']);
     Route::get('/get_profile_info/{slug}', [ProfileController::class, 'getProfileInfo']);
     Route::get('/get_user', [ProfileController::class, 'getUser']);
 
     //profile image
-    Route::post('/delete_image', [ProfileController::class, 'deleteImage']);
-    Route::post('/upload', [ProfileController::class, 'upload']);
+    Route::post('/delete_profile_image', [ProfileController::class, 'deleteImage']);
+    Route::post('/upload_profile_image', [ProfileController::class, 'upload']);
 
     //edit profile info
     Route::post('/edit_profile', [ProfileController::class, 'updateProfile']);
@@ -75,15 +76,16 @@ Route::prefix('/api')->group(function(){
 
     Route::post('/get_auth_user_info', [ProfileController::class, 'getAuthUserInfo']);
     Route::post('/save_interests/{id}', [ProfileController::class, 'interests']);
-    Route::get('/get_user_research/{slug}', [ProfileController::class, 'getUserResearch']);
+    Route::get('/get_user_research', [ProfileController::class, 'getUserResearch']);
     Route::get('/get_user_project/{slug}', [ProfileController::class, 'getUserProject']);
     Route::get('/get_user_post/{slug}', [ProfileController::class, 'getUserPost']);
-    Route::get('/get_user_connection', [ConnectionController::class, 'getUserConnection']);
-    Route::get('/get_auth_user_connection', [ConnectionController::class, 'getAuthUserConnection']);
-
+    
     //Attachment
     Route::post('/upload_attachment', [PostController::class, 'uploadAttachment']);
     Route::post('/delete_attachment', [PostController::class, 'deleteAttachment']);
+    //image
+    Route::post('/delete_image', [PostController::class, 'deleteImage']);
+    Route::post('/upload', [PostController::class, 'upload']);
     //save post
     Route::post('/save_post', [PostController::class, 'savePost']);
     // Route::get('/view_attachment/{id}', [PostController::class, 'viewAttachment']);
@@ -99,6 +101,8 @@ Route::prefix('/api')->group(function(){
     Route::get('/post_abstract/{slug}', [PostController::class, 'postAbstract']);
     Route::get('/get_liked_user', [PostController::class, 'getLikedUser']);
     Route::get('/download_attachment/{url}', [PostController::class, 'downloadAttachment']);
+    Route::get('/get_related_research', [ResearchController::class, 'getRelatedResearch']);
+
     //research
     Route::get('/get_all_research', [ResearchController::class, 'getAllResearch']);
 
@@ -112,6 +116,25 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_comment_replies', [CommentController::class, 'getCommentReplies']);
     Route::post('/comment_reply_like', [CommentController::class, 'commentReplyLike']);
     Route::get('/get_comment_reply_liked_user', [CommentController::class, 'getCommentReplyLikedUser']);
+
+    //Notification
+    Route::get('/get_notification', [NotificationController::class, 'getNotification']);
+    Route::get('/get_notification_count', [NotificationController::class, 'getNotificationCount']);
+    Route::get('/mark_as_read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::post('/mark_as_seen', [NotificationController::class, 'markAsSeen']);
+    Route::get('/get_read_notification', [NotificationController::class, 'getReadNotification']);
+    Route::get('/get_unread_notification', [NotificationController::class, 'getUnreadNotification']);
+    Route::get('/get_request_notification', [NotificationController::class, 'getRequestNotification']);
+    
+    //Connection
+    Route::post('/add_connection', [ConnectionController::class, 'addConnection']);
+    Route::post('/get_connection', [ConnectionController::class, 'getConnection']);
+    Route::get('/connection_status', [ConnectionController::class, 'connectionStatus']);
+    Route::post('/accept_connection', [ConnectionController::class, 'acceptConnection']);
+    Route::post('/ignore_connection', [ConnectionController::class, 'ignoreConnection']);
+    Route::get('/get_user_connection', [ConnectionController::class, 'getUserConnection']);
+    Route::get('/get_auth_user_connection', [ConnectionController::class, 'getAuthUserConnection']);
+    Route::get('/get_connection_request', [ConnectionController::class, 'getConnectionRequest']);
 
     //search
     Route::get('/search', [HomeController::class, 'search']);
@@ -128,21 +151,6 @@ Route::prefix('/api')->group(function(){
 
     //get departments
     Route::get('/get_departments', [HomeController::class, 'getDepartments']);
-
-    //Notification
-    Route::get('/get_notification', [NotificationController::class, 'getNotification']);
-    Route::get('/mark_as_read/{id}', [NotificationController::class, 'markAsRead']);
-    Route::post('/mark_as_seen', [NotificationController::class, 'markAsSeen']);
-    Route::get('/get_read_notification', [NotificationController::class, 'getReadNotification']);
-    Route::get('/get_unread_notification', [NotificationController::class, 'getUnreadNotification']);
-    Route::get('/get_request_notification', [NotificationController::class, 'getRequestNotification']);
-    //Connection
-    Route::post('/add_connection', [ConnectionController::class, 'addConnection']);
-    Route::post('/get_connection', [ConnectionController::class, 'getConnection']);
-    Route::get('/connection_status', [ConnectionController::class, 'connectionStatus']);
-    Route::post('/accept_connection', [ConnectionController::class, 'acceptConnection']);
-    Route::post('/ignore_connection', [ConnectionController::class, 'ignoreConnection']);
-
 
     Route::get('/banners', [HomeController::class, 'getBanner']);
     //for register

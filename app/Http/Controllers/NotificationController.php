@@ -25,6 +25,22 @@ class NotificationController extends Controller
             'data' =>$notification,
         ]);
     }
+    public function getNotificationCount(Request $request)
+    {
+        
+        $count = Auth::user()->notifications->where('seen_at', null)->count();
+
+        \Log::info('count notification');
+        \Log::info($count);
+
+        if($request->count != $count){
+            return response()->json([
+                'success' => true,
+                'count' => $count,
+            ], 201);
+        }
+        
+    }
     public function getReadNotification()
     {
         $notification = Auth::user()->readnotifications;

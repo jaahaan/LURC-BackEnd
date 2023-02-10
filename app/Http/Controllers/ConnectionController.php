@@ -26,18 +26,30 @@ class ConnectionController extends Controller
             'data' => $connection
         ], 201);
     }
+
     public function getUserConnection(Request $request){
         $user = User::where('slug', $request->slug)->first();
-        $query = Connection::where('connected', 1);
-        $data = $query->where('sent_request_user', $user->id)->orWhere('received_request_user', $user->id);
+        $query = Connection::with('user1', 'user2')->where('connected', 1);
+        $data = $query->where('sent_request_user', $user->id)->orWhere('received_request_user', $user->id)->get();
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ],200);
+    }
+
+    public function getAuthUserConnection(Request $request){
+        $limit = $request->limit? $request->limit : 4;
+        $query = Connection::with('user1', 'user2')->where('connected', 1);
+        $data = $query->where('sent_request_user', Auth::user()->id)->orWhere('received_request_user', Auth::user()->id)->limit($limit)->get();
         return response()->json([
             'success' => true,
             'data' => $data
         ]);
     }
-    public function getAuthUserConnection(Request $request){
-        $query = Connection::where('connected', 1)->with('user1', 'user2');
-        $data = $query->where('sent_request_user', Auth::user()->id)->orWhere('received_request_user', Auth::user()->id)->get();
+    public function getConnectionRequest(Request $request){
+        $data = Connection::with('user1', 'user2')
+                        ->where('received_request_user', Auth::user()->id)
+                        ->where('connected', 0)->get();
         return response()->json([
             'success' => true,
             'data' => $data

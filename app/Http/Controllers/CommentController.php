@@ -73,6 +73,7 @@ class CommentController extends Controller
     		CommentLike::where(['user_id'=>Auth::user()->id,'comment_id'=>$request->id])->delete();
     		return 'deleted';
     	} else{
+            
             return CommentLike::create([
                 'user_id' => Auth::user()->id,
 	    	    'comment_id' => $request->id,

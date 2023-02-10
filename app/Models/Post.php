@@ -34,6 +34,9 @@ class Post extends Model
     public function authors(){
         return $this->belongsToMany('App\Models\User','authors');
     }
+    public function images(){
+        return $this->hasMany('App\Models\Image','post_id');
+    }
     public function comments(){
         return $this->hasMany('App\Models\Comment','post_id');
     }

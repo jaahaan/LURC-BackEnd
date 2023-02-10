@@ -9,10 +9,11 @@ use Illuminate\Notifications\Notification;
 
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Auth;
 use App\Models\{
     User, Post
 };
-class PostNotification extends Notification
+class PostNotification extends Notification implements ShouldBroadcast
 {
     use Queueable;
     protected $user;
@@ -24,11 +25,12 @@ class PostNotification extends Notification
      *
      * @return void
      */
-    public function __construct(User $user, Post $post, $msg)
+    public function __construct(User $user, Post $post, $msg, )
     {
         $this->user = $user;
         $this->post = $post;
         $this->msg = $msg;
+        // $this->notificationCount = $notificationCount;
     }
 
     /**
@@ -39,7 +41,9 @@ class PostNotification extends Notification
      */
     public function via($notifiable)
     {
+        // return ['database', 'broadcast'];
         return ['database'];
+
     }
 
     
@@ -63,5 +67,19 @@ class PostNotification extends Notification
             'msg' => $this->msg,
             'isRequest' => false
         ];
+    }
+    public function toBroadcast($notifiable){
+
+        $notification = [
+            "data" => [
+                "user_name" => $this->user->name,
+                // "notificationCount" => $this->notificationCount,
+                "post_title" => $this->post->title,
+            ]
+        ];
+
+        return new BroadcastMessage([
+            'notification' => $notification
+        ]);
     }
 }
