@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateConnectionsTable extends Migration
+class CreateConversationsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,11 @@ class CreateConnectionsTable extends Migration
      */
     public function up()
     {
-        Schema::create('connections', function (Blueprint $table) {
+        Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('sent_request_user');
-            $table->unsignedBigInteger('received_request_user');
+            $table->unsignedBigInteger('from_id');
+            $table->unsignedBigInteger('to_id');
             $table->date('last_msg')->nullable();
-            $table->boolean('connected')->default(0);
             $table->timestamps();
         });
     }
@@ -30,6 +29,6 @@ class CreateConnectionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('connections');
+        Schema::dropIfExists('conversations');
     }
 }

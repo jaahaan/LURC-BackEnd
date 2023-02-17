@@ -11,6 +11,7 @@ class Connection extends Model
     protected $fillable = [
         'sent_request_user',
         'received_request_user',
+        'last_msg'
     ];
     public function user1(){
         return $this->belongsTo(User::class, 'sent_request_user');

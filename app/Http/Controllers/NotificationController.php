@@ -10,9 +10,13 @@ date_default_timezone_set('Asia/Dhaka');
 
 class NotificationController extends Controller
 {
-    public function getNotification()
+    public function getNotification(Request $request)
     {
-        $notification = Auth::user()->notifications;
+        $limit = $request->limit? $request->limit : 3;
+
+        $notification = Auth::user()->notifications()->limit($limit)->get();
+        // return auth()->user()->unreadNotifications()->limit(5)->get()->toArray();
+
         // $count = Auth::user()->notifications->where('seen_at', null)->count();
         $count = Auth::user()->notifications->where('seen_at', null)->count();
 

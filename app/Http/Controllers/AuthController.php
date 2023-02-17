@@ -60,7 +60,7 @@ class AuthController extends Controller
                     'email',
                     'unique:users,email',
                     'exists:teachers,email',
-                    'regex:/[a-z]+(_cse)?@lus\.ac\.bd/'
+                    'regex:/[a-z]+(_cse|_eee|_ce|_arch|_eng)?@lus\.ac\.bd/'
                 ],
                 // 'password' => 'bail|required|confirmed|min:2|max:20',
                 'password' => ['required',
@@ -235,7 +235,7 @@ class AuthController extends Controller
 
         $checkUser = Hash::check($input['password'], $data->password);
         if (!$checkUser) {
-            return response()->json(['msg'=>'Invalid credentials'], 401);
+            return response()->json(['msg'=>'Invalid password'], 401);
         }
         $user = User::where('email', $request->email)->where('isActive', 1)->first();
         if ($user) {

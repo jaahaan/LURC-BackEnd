@@ -1,39 +1,58 @@
-const express = require('express')
-const app = express()
+// const express= require('express');
+// const app = express();
+// const http = require('http');
+// const expressServer = http.createServer(app);
 
-const server = require('http').createServer(app)
+// const {Server} =require('socket.io');
+// const io = new Server(expressServer);
+
+// io.on('connection', function(socket){
+//     console.log("User Connected")
+//     socket.on('chat', function(msg){
+//         io.emit('chat_transfer', msg)
+//     })
+//     socket.on('notification', function(notification){
+//         io.emit('get_notification', notification)
+//     })
+// });
+// app.get('/', function(req, res){
+//     res.sendFile(__dirname+"/index.html")
+// });
+// expressServer.listen(5000, function(){
+//     console.log("Server Run @ 5000")
+// });
+
+const express = require('express');
+
+const app = express();
+
+
+const server = require('http').createServer(app);
+
 
 const io = require('socket.io')(server, {
-    cors: { origin: "http://localhost:8000" } 
+    cors: { origin: "*"}
 });
 
-app.get('/broadcast', async(req, res) => {
-
-    var returnResp
-    var params = req.query
-    
-    if(params.channel && params.message) {
-        var socket = app.get('WebSocket')
-        socket.broadcast.emit(params.channel, params.message) 
-        returnResp = {'status': true, 'message': 'Broadcast success'}
-    } else {
-        returnResp = {'status': false, 'message': 'Invalid Request'}
-    }
-
-    return res.json(returnResp).status(200)
-});
 
 io.on('connection', (socket) => {
-    //Assign the socket variable to WebSocket variable so we can use it the GET method
-    app.set('WebSocket', socket)
-    
-    socket.on('sendNotificationToUser', (obj) => {
-        socket.broadcast.emit('receiveNotificationToUser_'+obj.user, obj.message)
+    console.log('connection');
+
+    socket.on('sendChatToServer', (message) => {
+        console.log(message);
+
+        io.sockets.emit('sendChatToClient', message);
+        // socket.broadcast.emit('sendChatToClient', message);
+    });
+    socket.on('notification', function(notification){
+        socket.broadcast.emit('get_notification', notification)
     })
-})
 
-const port = 3000
+    socket.on('disconnect', (socket) => {
+        console.log('Disconnect');
+    });
+});
 
-server.listen(port, () => {
-    console.log('Server is running. Port: '+port)
+server.listen(5000, () => {
+    console.log('Server is running');
 });

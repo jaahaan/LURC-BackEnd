@@ -13,6 +13,7 @@ use App\Http\Controllers\ConnectionController;
 
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\MessageController;
 
 
 
@@ -142,6 +143,12 @@ Route::prefix('/api')->group(function(){
     //get people you may know
     Route::get('/get_people_you_may_know', [HomeController::class, 'getPeopleYouMayKnow']);
     
+    //Message
+    Route::get('/get_conversation', [MessageController::class, 'getConversation']);
+    Route::post('/add_conversation', [MessageController::class, 'addConversation']);
+    Route::get('/get_chat', [MessageController::class, 'getSelectedUserChat']);
+    Route::post('/add_chat', [MessageController::class, 'addSelectedUserChat']);
+
     //admin
     //add teacher
     Route::get('/get_teachers',[TeacherController::class, 'GetTeachers']);
