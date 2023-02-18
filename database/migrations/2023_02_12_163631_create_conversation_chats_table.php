@@ -20,7 +20,7 @@ class CreateConversationChatsTable extends Migration
             $table->unsignedBigInteger('to_id');
             $table->text('msg')->nullable();
             $table->string('image')->nullable();
-            $table->boolean('is_seen')->nullable();
+            $table->boolean('is_seen')->default(0);
             $table->timestamps();
         });
     }

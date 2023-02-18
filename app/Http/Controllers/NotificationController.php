@@ -37,12 +37,10 @@ class NotificationController extends Controller
         \Log::info('count notification');
         \Log::info($count);
 
-        if($request->count != $count){
             return response()->json([
                 'success' => true,
-                'count' => $count,
-            ], 201);
-        }
+                'data' => $count,
+            ]);
         
     }
     public function getReadNotification()

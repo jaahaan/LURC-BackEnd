@@ -148,6 +148,9 @@ Route::prefix('/api')->group(function(){
     Route::post('/add_conversation', [MessageController::class, 'addConversation']);
     Route::get('/get_chat', [MessageController::class, 'getSelectedUserChat']);
     Route::post('/add_chat', [MessageController::class, 'addSelectedUserChat']);
+    Route::get('/get_unseenmsg_count', [MessageController::class, 'getUnseenMsgCount']);
+    Route::get('/get_unseenmsg_count', [MessageController::class, 'getUnseenMsgCount']);
+    Route::post('/mark_seen_msg', [MessageController::class, 'markSeenMsg']);
 
     //admin
     //add teacher

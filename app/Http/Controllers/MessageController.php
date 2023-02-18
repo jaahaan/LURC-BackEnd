@@ -11,8 +11,8 @@ class MessageController extends Controller
     public function getConversation(Request $request)
     {
         $limit = $request->limit? $request->limit : 4;
-        // $query = Conversation::with('fromUser', 'toUser')->where('last_msg', "!=", null);
-        $query = Conversation::with('fromUser', 'toUser');
+        $query = Conversation::with('fromUser', 'toUser')->where('last_msg', "!=", null);
+        // $query = Conversation::with('fromUser', 'toUser');
 
         $data = $query->where('from_id', Auth::user()->id)->orWhere('to_id', Auth::user()->id)->orderBy('last_msg', 'desc')->limit($limit)->get();
         return response()->json([
@@ -23,7 +23,7 @@ class MessageController extends Controller
     public function getSelectedUserChat(Request $request)
     {
         $limit = $request->limit? $request->limit : 6;
-        // $data = ConversationChat::with('fromUser', 'toUser')->where('room_id', $request->roomId)->limit($limit)->get();
+        // $data = ConversationChat::with('fromUser', 'toUser')->where('room_id', $request->roomId)->orderBy('id', 'asc')->limit($limit)->get();
         $data = ConversationChat::with('fromUser', 'toUser')
                 ->where('room_id', $request->roomId)->orderBy('id', 'asc')->get();
         
@@ -36,6 +36,9 @@ class MessageController extends Controller
     {
         $data = ConversationChat::create($request->all());
         Conversation::where('id', $request->room_id)->update([
+            'last_msg_from_id'=> Auth::user()->id,
+            'last_msg_to_id'=> $request->to_id,
+            'is_seen'=> null,
             'last_msg'=> now()
         ]);
         return $data;
@@ -65,5 +68,23 @@ class MessageController extends Controller
             ], 201);
         }
         
+    }
+    public function getUnseenMsgCount(Request $request)
+    {
+        $count = Conversation::where(['last_msg_to_id'=> Auth::user()->id, 'is_seen'=>null])->count();
+            return response()->json([
+                'success' => true,
+                'count' => $count
+            ]);
+    }
+    public function markSeenMsg(Request $request)
+    {
+        $data = Conversation::where(['last_msg_to_id'=> Auth::user()->id, 'is_seen'=>null])->update([
+            'is_seen'=> now()
+        ]);
+        return response()->json([
+            'success' => true,
+            'count' => $data
+        ]);
     }
 }

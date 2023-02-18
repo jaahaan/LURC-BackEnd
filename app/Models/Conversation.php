@@ -11,6 +11,9 @@ class Conversation extends Model
     protected $fillable = [
         'from_id',
         'to_id',
+        'last_msg_from_id',
+        'last_msg_to_id',
+        'is_seen',
         'last_msg'
     ];
     public function fromUser(){

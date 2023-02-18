@@ -200,7 +200,7 @@ class AuthController extends Controller
             [
                 'email' => 'bail|required|exists:users,email',
                 'password' => 'bail|required|min:2|max:20',
-            ], ['email.exists' => 'No account found for this Number']);
+            ], ['email.exists' => 'No account found for this email']);
 
             if($token = auth()->attempt($validator->validated())){
                 return response()->json([
@@ -220,7 +220,7 @@ class AuthController extends Controller
         [
             'email' => 'bail|required|exists:users,email',
             'password' => 'bail|required|min:2|max:20',
-        ], ['email.exists' => 'No account found for this Number']);
+        ], ['email.exists' => 'No account found for this email']);
 
         if($validator->fails()){
             return response()->json($validator->errors(), 422);

@@ -44,6 +44,12 @@ io.on('connection', (socket) => {
         io.sockets.emit('sendChatToClient', message);
         // socket.broadcast.emit('sendChatToClient', message);
     });
+    socket.on('chatNotificationToServer', (data) => {
+        console.log(data);
+
+        io.sockets.emit('chatNotificationToClient', data);
+        // socket.broadcast.emit('sendChatToClient', message);
+    });
     socket.on('notification', function(notification){
         socket.broadcast.emit('get_notification', notification)
     })
