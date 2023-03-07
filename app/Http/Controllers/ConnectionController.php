@@ -29,27 +29,46 @@ class ConnectionController extends Controller
 
     public function getUserConnection(Request $request){
         $user = User::where('slug', $request->slug)->first();
-        $query = Connection::with('user1', 'user2')->where('connected', 1);
-        $data = $query->where('sent_request_user', $user->id)->orWhere('received_request_user', $user->id)->get();
+        $limit = $request->limit? $request->limit : 10;
+        $data = Connection::with('user1', 'user2')->where('connected', 1)->limit($limit)->get();
+
+        $formattedData = [];
+        foreach($data as $value){
+            $connected1 = Connection::where('id', $value->id)->where('sent_request_user', $user->id)->first();
+            $connected2 = Connection::where('id', $value->id)->where('received_request_user', $user->id)->first();
+            if($connected1 || $connected2){
+                array_push($formattedData, $value);
+            } else{
+                continue;
+            }
+        }
         return response()->json([
-            'success' => true,
-            'data' => $data
+            'success'=> true,
+            'data'=>$formattedData,
         ],200);
     }
 
     public function getAuthUserConnection(Request $request){
-        $limit = $request->limit? $request->limit : 4;
-        $query = Connection::with('user1', 'user2')->where('connected', 1);
-        $data = $query->where('sent_request_user', Auth::user()->id)->orWhere('received_request_user', Auth::user()->id)->limit($limit)->get();
+        $limit = $request->limit? $request->limit : 10;
+        $data = Connection::with('user1', 'user2')->where('connected', 1)->limit($limit)->get();
+
+        $formattedData = [];
+        foreach($data as $value){
+            $connected1 = Connection::where('id', $value->id)->where('sent_request_user', Auth::user()->id)->first();
+            $connected2 = Connection::where('id', $value->id)->where('received_request_user', Auth::user()->id)->first();
+            if($connected1 || $connected2){
+                array_push($formattedData, $value);
+            }
+        }
         return response()->json([
-            'success' => true,
-            'data' => $data
-        ]);
+            'success'=> true,
+            'data'=>$formattedData,
+        ],200);
     }
     public function getConnectionRequest(Request $request){
-        $data = Connection::with('user1', 'user2')
+        $data = Connection::with('user1', 'user2')->where('connected', 0)
                         ->where('received_request_user', Auth::user()->id)
-                        ->where('connected', 0)->get();
+                        ->get();
         return response()->json([
             'success' => true,
             'data' => $data

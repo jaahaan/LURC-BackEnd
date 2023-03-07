@@ -83,7 +83,7 @@ class ProfileController extends Controller
         if(is_null($image)){
             return User::where('id', $id)->update([
                 'name' => $request->name,
-                'image' => 'http://localhost:8000/profileImages/download.jpg',
+                'image' => 'https://cameraworldapi.dreamsgallerybd.com/profileImages/download.jpg',
                 'designation' => $request->designation,
                 'department_id' => $request->department,
             ]);
@@ -239,7 +239,12 @@ class ProfileController extends Controller
             return response()->json(['msg' => 'Unsuccessfully.'], 401);
         }
     }
+    public function deleteSkills(Request $request)
+    {
+        
+        return UserSkill::where('user_id', Auth::user()->id)->delete();
 
+    }
 
     public function interests(Request $request, $id)
     {
@@ -271,9 +276,9 @@ class ProfileController extends Controller
         $filePath = public_path() . $fileName;
         \Log::info('$filePath');
         \Log::info($filePath);
-        $default_image = 'http://localhost:8000/profileImages/download.jpg';
+        $default_image = 'https://cameraworldapi.dreamsgallerybd.com/profileImages/download.jpg';
         if (file_exists($filePath)) {
-            if($fileName!='http://localhost:8000/profileImages/download.jpg'){
+            if($fileName!='https://cameraworldapi.dreamsgallerybd.com/profileImages/download.jpg'){
                 @unlink($filePath);
             }
         }

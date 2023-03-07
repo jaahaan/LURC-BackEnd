@@ -25,10 +25,12 @@ class HomeController extends Controller
         ],200);
     }
     public function search(Request $request){
-        $searchString= $request->keyword;
+        $search= $request->keyword;
         $limit = $request->limit? $request->limit : 3;
 
-        $users = User::where('name', 'LIKE','%'.$searchString.'%')->limit($limit)->get();
+        $users = User::where('name', 'like', "%$search%")->limit($limit)->get();
+        
+        
         return response()->json($users);
     }
 

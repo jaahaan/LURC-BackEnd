@@ -32,14 +32,11 @@ class AuthController extends Controller
     function authUser(){
         try {
             \Log::info('I am in Auth try');
-            
             $user_id = Auth::user()->id;
             $data = User::where('id', $user_id)->first();
             return $data;
-
         } catch (\Throwable $th) {
             \Log::info('I am in Auth catch');
-
             return response()->json([
                 'msg'=>'Auth not found'
             ], 401);
@@ -70,13 +67,13 @@ class AuthController extends Controller
                    'confirmed'],
                 'password_confirmation' => 'required',
                 'designation' => 'required',
-                'department_id' => 'required',
+                'department' => 'required',  
             ],
             [
                 'name.regex' => 'Only Characters are allowed!!',
                 'email.regex' => 'Please provide your Institutional email!!',
                 'email.exists' => 'This is not a teacher email!!',
-                'password.regex' => '1 upper, 1 lower, 1 digit'
+                'password.regex' => '1 Upper, 1 Lower, 1 Digit, 1 Special Character, Minimum Length 8'
             ]
         );
 
@@ -87,7 +84,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
-            'department' => $request->department,
+            'department_id' => $request->department,
             'designation' => $request->designation,
             'userType' => 'teacher',
             'passwordToken' => $passwordToken,
@@ -133,7 +130,7 @@ class AuthController extends Controller
             [
                 'name.regex' => 'Only Characters are allowed!!',
                 'email.regex' => 'Please provide your Institutional email!!',
-                'password.regex' => '1 upper, 1 lower, 1 digit'
+                'password.regex' => '1 Upper, 1 Lower, 1 Digit, 1 Special Character, Minimum Length 8'
             ]
         );
         
@@ -225,7 +222,6 @@ class AuthController extends Controller
         if($validator->fails()){
             return response()->json($validator->errors(), 422);
         }
-
 
         $input = $request->all();
         $data = User::select('id', 'email', 'password')->where('email', $input['email'])->first();
@@ -408,6 +404,55 @@ class AuthController extends Controller
         } else {
             return response()->json(['msg' => 'Invalid OTP', 'status' => 'error'], 401);
         }
+    }
+
+    public function updatePass(Request $request)
+    {
+        // $validator = Validator::make($request->all(),
+        // [
+        //     'old_password' => 'required',
+        //     'password' => ['required',
+        //            'min:8',
+        //            'max:20',
+        //            'regex:/^.*((?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%&*<+_-])).*$/',
+        //            'confirmed'],
+        //     'password_confirmation' => 'required',
+        // ], [            
+        //     'new_password.regex' => '1 Upper, 1 Lower, 1 Digit, 1 Special Character, Minimum Length 8'
+        // ]);
+
+        $request->validate([
+            'old_password' => 'required',
+            'password' => ['required',
+                   'min:8',
+                   'max:20',
+                   'regex:/^.*((?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%&*<+_-])).*$/',
+                   'confirmed'],
+            'password_confirmation' => 'required',
+        ], [
+            'new_password.regex' => '1 Upper, 1 Lower, 1 Digit, 1 Special Character, Minimum Length 8'
+        ]);
+        
+        // if($validator->fails()){
+        //     return response()->json($validator->errors(), 422);
+        // }
+
+        $input = $request->all();
+        $data = User::select('id', 'email', 'password')->where('email', Auth::user()->email)->first();
+
+        //The makeVisible method returns the model instance
+        $data->makeVisible('password')->toArray();
+
+        $checkUser = Hash::check($input['old_password'], $data->password);
+        if (!$checkUser) {
+            return response()->json(['msg'=>'Old password is incorrect'], 401);
+        }
+        else {
+            User::where('email', Auth::user()->email)->update([
+                'password' => \Hash::make($request->password),
+            ]);
+            return response()->json(['msg' => 'Password updated successfully', 'status' => 'success'], 201);
+        } 
     }
 
     public function logout(){

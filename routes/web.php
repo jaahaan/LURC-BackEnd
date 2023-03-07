@@ -29,20 +29,20 @@ use App\Http\Controllers\MessageController;
 |
 */
 
-Route::get('/', function () {
-    if (!Auth::check() && $request->path() != '/') {
-        return redirect('/');
-    }
+// Route::get('/', function () {
+//     if (!Auth::check() && $request->path() != '/') {
+//         return redirect('/');
+//     }
 
-    if (!Auth::check()) {
-        return view('welcome');
-    }
+//     if (!Auth::check()) {
+//         return view('welcome');
+//     }
 
-    if (Auth::check() && ($request->path() == 'login' || $request->path() == 'register' || $request->path() == '/')) {
-        return redirect('/home');
-    }
-    return view('welcome');
-});
+//     if (Auth::check() && ($request->path() == 'login' || $request->path() == 'register' || $request->path() == '/')) {
+//         return redirect('/home');
+//     }
+//     return view('welcome');
+// });
 //auth user
 Route::get('/api/auth_user', [AuthController::class, 'authUser'])->middleware('jwt.verify');
 
@@ -74,6 +74,7 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_skills', [ProfileController::class, 'getSkills']);
     Route::post('/save_skills', [ProfileController::class, 'saveSkills']);
     Route::post('/update_skills', [ProfileController::class, 'updateSkills']);
+    Route::post('/delete_skills', [ProfileController::class, 'deleteSkills']);
 
     Route::post('/get_auth_user_info', [ProfileController::class, 'getAuthUserInfo']);
     Route::post('/save_interests/{id}', [ProfileController::class, 'interests']);
@@ -149,8 +150,10 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_chat', [MessageController::class, 'getSelectedUserChat']);
     Route::post('/add_chat', [MessageController::class, 'addSelectedUserChat']);
     Route::get('/get_unseenmsg_count', [MessageController::class, 'getUnseenMsgCount']);
-    Route::get('/get_unseenmsg_count', [MessageController::class, 'getUnseenMsgCount']);
+    Route::post('/add_unseenmsg_count', [MessageController::class, 'addUnseenMsgCount']);
     Route::post('/mark_seen_msg', [MessageController::class, 'markSeenMsg']);
+    Route::post('/mark_read_msg', [MessageController::class, 'markReadMsg']);
+
 
     //admin
     //add teacher
@@ -163,6 +166,9 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_departments', [HomeController::class, 'getDepartments']);
 
     Route::get('/banners', [HomeController::class, 'getBanner']);
+    
+    Route::post('/update_pass', [AuthController::class, 'updatePass']);
+
     //for register
     Route::post('/register_t', [AuthController::class, 'register_t']);
     Route::post('/register_s', [AuthController::class, 'register_s']);

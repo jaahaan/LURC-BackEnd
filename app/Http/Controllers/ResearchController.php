@@ -41,7 +41,7 @@ class ResearchController extends Controller
             $query->orderBy($default, $order);
         }
 
-        $data = $query->limit($limit)->get();
+        $data = $query->limit($limit)->orderBy('id', 'desc')->get();
 
         $formattedData = [];
         foreach($data as $value){

@@ -339,7 +339,7 @@ class PostController extends Controller
         $publicationAuthors = [];
         $postImages = [];
         DB::beginTransaction();
-        // try {
+        try {
             $post = Post::where('id', $request->id)->update([
                 'user_id' => $request->user_id,
                 'type' => $request->type,
@@ -371,10 +371,10 @@ class PostController extends Controller
             Image::insert($postImages);
             DB::commit();
             return response()->json(['msg' => 'Updated Successfully.', 'status' => $post], 200);
-        // } catch (\Throwable $e) {
-        //     DB::rollback();
-        //     return response()->json(['msg' => 'Unsuccessfully.'], 401);
-        // }
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json(['msg' => 'Unsuccessfully.'], 401);
+        }
     }
 
     public function deletePost(Request $request)
@@ -413,7 +413,8 @@ class PostController extends Controller
             Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'down voted your'])->delete();
 
             $authUser = Auth::user();
-            $postUser = $post->user;
+            $postUser = User::where('id', $post->user_id)->first();
+
             $msg = "up voted your";
             $postUser->notify(new PostNotification($authUser, $post, $msg));
             
@@ -437,7 +438,8 @@ class PostController extends Controller
                 'upVote'=> $request->upVote,
             ]);
             $authUser = Auth::user();
-            $postUser = $post->user;
+            $postUser = User::where('id', $post->user_id)->first();
+
             $msg = "up voted your";
             $postUser->notify(new PostNotification($authUser, $post, $msg));
             
@@ -486,7 +488,8 @@ class PostController extends Controller
                 'downVote'=> $request->downVote,
             ]);
             $authUser = Auth::user();
-            $postUser = $post->user;
+            $postUser = User::where('id', $post->user_id)->first();
+
             $msg = "down voted your";
             $postUser->notify(new PostNotification($authUser, $post, $msg));
             
@@ -506,7 +509,8 @@ class PostController extends Controller
                 'downVote'=> $request->downVote,
             ]);
             $authUser = Auth::user();
-            $postUser = $post->user;
+            $postUser = User::where('id', $post->user_id)->first();
+
             $msg = "down voted your";
             $postUser->notify(new PostNotification($authUser, $post, $msg));
             
@@ -557,19 +561,10 @@ class PostController extends Controller
             Post::where('id', $post->id)->update([
                 'count' => $count,
             ]);
-                       
-
-            $notificationCount =  Notification::where([
-                'notifiable_id'=>Auth::user()->id,'seen_at'=>null
-                ])->count();
-                
-            \Log::info('notificationCount');
-            \Log::info($notificationCount);
-
+                    
             $authUser = Auth::user();
-            $postUser = $post->user;
+            $postUser = User::where('id', $post->user_id)->first();
             $msg = "liked your";
-            // $postUser->notify(new PostNotification($authUser, $post, $msg, $notificationCount));
             $postUser->notify(new PostNotification($authUser, $post, $msg));
                     
             return $like;            

@@ -11,7 +11,7 @@ class Conversation extends Model
     protected $fillable = [
         'from_id',
         'to_id',
-        'last_msg_from_id',
+        'last_msg_from_id', //latest msg
         'last_msg_to_id',
         'is_seen',
         'last_msg'
@@ -22,5 +22,8 @@ class Conversation extends Model
 
     public function toUser(){
         return $this->belongsTo(User::class, 'to_id');
+    }
+    public function latestMessage(){
+        return $this->belongsTo('App\Models\ConversationChat','last_msg_from_id', 'id');
     }
 }

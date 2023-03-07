@@ -10,7 +10,7 @@ class ConversationChat extends Model
     use HasFactory;
     protected $fillable = [
         'room_id',
-        'from_id',
+        'from_id', //sender
         'to_id',
         'msg',
         'image',
@@ -22,5 +22,8 @@ class ConversationChat extends Model
 
     public function toUser(){
         return $this->belongsTo(User::class, 'to_id');
+    }
+    public function chat(){
+        return $this->belongsTo('App\Models\Conversation','room_id', 'id');
     }
 }

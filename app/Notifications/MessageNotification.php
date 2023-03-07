@@ -9,27 +9,24 @@ use Illuminate\Notifications\Notification;
 
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Auth;
 use App\Models\{
     User, Post
 };
-class PostNotification extends Notification implements ShouldBroadcast
+class MessageNotification extends Notification
 {
     use Queueable;
     protected $user;
-    protected $post;
-    protected $msg;
+    protected $room_id;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(User $user, Post $post, $msg )
+    public function __construct(User $user, $room_id)
     {
         $this->user = $user;
-        $this->post = $post;
-        $this->msg = $msg;
+        $this->room_id = $room_id;
     }
 
     /**
@@ -40,12 +37,9 @@ class PostNotification extends Notification implements ShouldBroadcast
      */
     public function via($notifiable)
     {
-        // return ['database', 'broadcast'];
-        return ['database'];
+        return ['database'];    }
 
-    }
 
-    
     /**
      * Get the array representation of the notification.
      *
@@ -55,17 +49,12 @@ class PostNotification extends Notification implements ShouldBroadcast
     public function toArray($notifiable)
     {
         return [
-            'post_id' => $this->post->id,
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,
             'user_image' => $this->user->image,
             'user_slug' => $this->user->slug,
-            'post_title' => $this->post->title,
-            'post_type' => $this->post->type,
-            'post_slug' => $this->post->slug,
-            'msg' => $this->msg,
-            'isRequest' => false
+            'room_id' => $this->room_id,
+            'msg' => 'msg'
         ];
     }
-   
 }

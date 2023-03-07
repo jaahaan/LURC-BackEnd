@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Auth;
-
+use App\Models\User;
 use App\Models\Post;
 use App\Models\CommentLike;
 use App\Models\Comment;
 use App\Models\CommentReply;
 use App\Models\CommentReplyLike;
-use App\Notifications\PostNotification;
+use App\Notifications\CommentNotification;
 
 date_default_timezone_set('Asia/Dhaka');
 
@@ -68,12 +68,18 @@ class CommentController extends Controller
 
         \Log::info('$check');
         \Log::info($checkLike);
+        $comment = Comment::where('id',$request->id)->first();
+        $post = Post::where('id',$comment->id)->first();
 
     	if ($checkLike) {
     		CommentLike::where(['user_id'=>Auth::user()->id,'comment_id'=>$request->id])->delete();
     		return 'deleted';
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$post->id, 'data->msg'=>'liked your comment'])->delete();
     	} else{
-            
+            $authUser = Auth::user();
+            $commentUser = $comment->user;
+            $msg = "liked your comment";
+            // $commentUser->notify(new PostNotification($authUser, $post, $msg));
             return CommentLike::create([
                 'user_id' => Auth::user()->id,
 	    	    'comment_id' => $request->id,
@@ -105,28 +111,29 @@ class CommentController extends Controller
     }
 
     public function addComment(Request $request){
-        $post = Post::where('id',$request->id)->first();
-        $authUser = Auth::user();
-        $postUser = $post->user;
-        $msg = "commented your";
-        $postUser->notify(new PostNotification($authUser, $post, $msg));
-        return Comment::create([
+        $comment =  Comment::create([
             'user_id' => Auth::user()->id,
             'post_id' => $request->id,
             'comment' => $request->comment,
-        ], 201);
+        ]);
+        $post = Post::where('id',$request->id)->first();
+        $comment_id = $comment->id;
+        $authUser = Auth::user();
+        $postUser = User::where('id', $post->user_id)->first();
+        $msg = "commented your";
+        $postUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+        return $comment;
     }
 
     //Comment Reply
     public function addCommentReply(Request $request){
         $post = Post::where('id',$request->post_id)->first();
         $comment = Comment::where('id',$request->comment_id)->first();
-
+        $comment_id = $comment->id;
         $authUser = Auth::user();
-        $postUser = $post->user;
-        $commentUser = $comment->user;
+        $commentUser = User::where('id', $comment->user_id)->first();
         $msg = "replied your comment";
-        $commentUser->notify(new PostNotification($authUser, $post, $msg));
+        $commentUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
         return CommentReply::create([
             'user_id' => Auth::user()->id,
             'post_id' => $request->post_id,

@@ -14,11 +14,11 @@ class NotificationController extends Controller
     {
         $limit = $request->limit? $request->limit : 3;
 
-        $notification = Auth::user()->notifications()->limit($limit)->get();
+        $notification = Auth::user()->notifications()->where('data->msg','!=', 'msg')->limit($limit)->get();
         // return auth()->user()->unreadNotifications()->limit(5)->get()->toArray();
 
         // $count = Auth::user()->notifications->where('seen_at', null)->count();
-        $count = Auth::user()->notifications->where('seen_at', null)->count();
+        $count = Auth::user()->notifications()->where('seen_at', null)->where('data->msg','!=', 'msg')->count();
 
         \Log::info('count notification');
         \Log::info($count);
@@ -32,7 +32,7 @@ class NotificationController extends Controller
     public function getNotificationCount(Request $request)
     {
         
-        $count = Auth::user()->notifications->where('seen_at', null)->count();
+        $count = Auth::user()->notifications()->where('seen_at', null)->where('data->msg','!=', 'msg')->count();
 
         \Log::info('count notification');
         \Log::info($count);
@@ -45,7 +45,7 @@ class NotificationController extends Controller
     }
     public function getReadNotification()
     {
-        $notification = Auth::user()->readnotifications;
+        $notification = Auth::user()->readnotifications->where('data->msg','!=', 'msg');
 
         return response()->json([
             'success' => true,
@@ -54,7 +54,7 @@ class NotificationController extends Controller
     }
     public function getUnreadNotification()
     {
-        $notification = Auth::user()->unreadnotifications;
+        $notification = Auth::user()->unreadnotifications->where('data->msg','!=', 'msg');
 
         return response()->json([
             'success' => true,
@@ -64,7 +64,7 @@ class NotificationController extends Controller
     public function getRequestNotification()
     {
         // $notification =Auth::user()->isRequest; 
-        $notification = Auth::user()->notifications->where('seen_at', null)->get();
+        $notification = Auth::user()->notifications->where('seen_at', null)->where('data->msg','!=', 'msg')->get();
 
         return response()->json([
             'success' => true,
@@ -74,7 +74,7 @@ class NotificationController extends Controller
     public function markAsRead($id)
     {
         if($id){
-            Auth::user()->notifications->where('id', $id)->markAsRead();
+            Auth::user()->notifications->where('id', $id)->where('data->msg','!=', 'msg')->markAsRead();
         }
         return response()->json([
             'success' => true,
@@ -83,8 +83,11 @@ class NotificationController extends Controller
 
     public function markAsSeen()
     {
-        Auth::user()->notifications->markAsSeen();
+        Auth::user()->notifications()->where('data->msg','!=', 'msg')->update([
+            'seen_at' => now(),
+        ]);
         return response()->json([
             'success' => true,
-        ]);    }
+        ]);    
+    }
 }

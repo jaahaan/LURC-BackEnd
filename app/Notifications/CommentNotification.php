@@ -7,17 +7,18 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
+
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Auth;
 use App\Models\{
     User, Post
 };
-class PostNotification extends Notification implements ShouldBroadcast
+class CommentNotification extends Notification
 {
     use Queueable;
     protected $user;
     protected $post;
+    protected $comment_id;
     protected $msg;
 
     /**
@@ -25,10 +26,11 @@ class PostNotification extends Notification implements ShouldBroadcast
      *
      * @return void
      */
-    public function __construct(User $user, Post $post, $msg )
+    public function __construct(User $user, Post $post, $comment_id, $msg)
     {
         $this->user = $user;
         $this->post = $post;
+        $this->comment_id = $comment_id;
         $this->msg = $msg;
     }
 
@@ -40,12 +42,10 @@ class PostNotification extends Notification implements ShouldBroadcast
      */
     public function via($notifiable)
     {
-        // return ['database', 'broadcast'];
         return ['database'];
-
     }
 
-    
+
     /**
      * Get the array representation of the notification.
      *
@@ -63,9 +63,9 @@ class PostNotification extends Notification implements ShouldBroadcast
             'post_title' => $this->post->title,
             'post_type' => $this->post->type,
             'post_slug' => $this->post->slug,
+            'comment_id' => $this->comment_id,
             'msg' => $this->msg,
             'isRequest' => false
         ];
     }
-   
 }
