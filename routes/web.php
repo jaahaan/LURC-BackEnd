@@ -14,8 +14,9 @@ use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MessageController;
-
-
+use App\Http\Controllers\BannerController;
+use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\AdminController;
 
 
 /*
@@ -148,11 +149,14 @@ Route::prefix('/api')->group(function(){
     Route::get('/get_conversation', [MessageController::class, 'getConversation']);
     Route::post('/add_conversation', [MessageController::class, 'addConversation']);
     Route::get('/get_chat', [MessageController::class, 'getSelectedUserChat']);
-    Route::post('/add_chat', [MessageController::class, 'addSelectedUserChat']);
+    Route::post('/add_chat', [MessageController::class, 'addChat']);
     Route::get('/get_unseenmsg_count', [MessageController::class, 'getUnseenMsgCount']);
     Route::post('/add_unseenmsg_count', [MessageController::class, 'addUnseenMsgCount']);
     Route::post('/mark_seen_msg', [MessageController::class, 'markSeenMsg']);
     Route::post('/mark_read_msg', [MessageController::class, 'markReadMsg']);
+
+    //get departments
+    Route::get('/get_departments', [HomeController::class, 'getDepartments']);
 
 
     //admin
@@ -162,17 +166,38 @@ Route::prefix('/api')->group(function(){
     Route::post('/teachers_update',[TeacherController::class,'TeacherUpdate']);
     Route::post('/teachers_del',[TeacherController::class,'TeacherDel']);
 
-    //get departments
-    Route::get('/get_departments', [HomeController::class, 'getDepartments']);
+    //Admin
+    Route::get('/userList',[AdminController::class, 'getUserList']);
+    Route::get('/adminList',[AdminController::class, 'adminList']);
+    Route::post('/add_admin',[AdminController::class,'addAdmin']);
+    Route::post('/admin_remove',[AdminController::class,'adminRemove']);
 
-    Route::get('/banners', [HomeController::class, 'getBanner']);
+    //Banner
+    Route::get('/landing_banners', [BannerController::class, 'LandingBanners']);
+    Route::get('/get_banners', [BannerController::class, 'GetBanners']);
+    Route::post('/add_banner',[BannerController::class,'AddBanner']);
+    Route::post('/update_banner',[BannerController::class,'UpdateBanner']);
+    Route::post('/del_banner',[BannerController::class,'DelBanner']);
+    Route::post('/active_banner',[BannerController::class,'ActiveBanner']);
+
+    Route::get('/main_banner_all',[BannerController::class,'getAllBanners']);
+    Route::post('/reset_banner',[BannerController::class,'resetAllBanner']);
+    //Theme
+    Route::get('/getThemeSetting', [ThemeController::class, 'getThemeSetting']);
+    Route::get('/get_theme', [ThemeController::class, 'getTheme']);
     
+
     Route::post('/update_pass', [AuthController::class, 'updatePass']);
+    Route::post('/update_two_factor', [AuthController::class, 'updateTwoFactor']);
 
     //for register
     Route::post('/register_t', [AuthController::class, 'register_t']);
     Route::post('/register_s', [AuthController::class, 'register_s']);
     Route::post('/verify_email', [AuthController::class, 'verifyEmail']);
+    Route::post('/resend_otp', [AuthController::class, 'resendOtp']);
+    Route::post('/resend_pass_reset_otp', [AuthController::class, 'resendPassResetOtp']);
+    Route::post('/get_otp_time', [AuthController::class, 'getOtpTime']);
+    
 
     //for login
     Route::post('/login', [AuthController::class, 'login']);
@@ -184,6 +209,9 @@ Route::prefix('/api')->group(function(){
     Route::post('/send_reset_password_otp', [AuthController::class, 'sendResetPassOtp']);
     Route::post('/submit_reset_password_otp', [AuthController::class, 'submitResetPassOtp']);
     Route::post('/reset_password', [AuthController::class, 'resetPassword']);
+
+
+    Route::post('/delete_account', [AuthController::class, 'deleteAccount']);
     
 });
 Route::get('/',  [AuthController::class, 'index']);

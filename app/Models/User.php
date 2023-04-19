@@ -41,12 +41,12 @@ class User extends Authenticatable implements JWTSubject
         'image',
         'about',
         'skills',
-        'interests',
+        'twoFactor',
         'honors_and_awards',
         'userType',
         'passwordToken',
         'isActive', 
-        'token_expired_at'
+        'token_expired_at',
     ];
     public function setPasswordAttribute($password)
     {
@@ -108,9 +108,7 @@ class User extends Authenticatable implements JWTSubject
     {
        return $this->belongsTo('App\Models\Department','department_id','id');
     }
-    // public function user_skills(){
-    //     return $this->belongsToMany('App\Models\Skill','user_skills');
-    // }
+
     public function user_skills(): BelongsToMany
     {
         return $this->belongsToMany(Skill::class, 'user_skills');

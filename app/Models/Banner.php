@@ -10,9 +10,11 @@ class Banner extends Model
     protected $fillable = [
         'image',
         'type',
+        'order_no',
+        'isActive',
         'title',
         'link',
-        'btn_text'
+        'btn_text',
     ];
     use HasFactory;
 }

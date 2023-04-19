@@ -10,10 +10,13 @@ use App\Models\Post;
 use App\Models\Vote;
 use App\Models\Read;
 use App\Models\Like;
-use App\Models\Comment;
 use App\Models\Connection;
 use App\Models\Notification;
-
+use App\Models\Notify;
+use App\Models\CommentLike;
+use App\Models\Comment;
+use App\Models\CommentReply;
+use App\Models\CommentReplyLike;
 use App\Models\Author;
 use App\Models\Image;
 use App\Models\Attachment;
@@ -29,9 +32,9 @@ class PostController extends Controller
 {
     public function getAllPost(Request $request){
 
-        $limit = $request->limit? $request->limit : 4;
+        $limit = $request->limit? $request->limit : 6;
 
-        $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'images'])->orderBy('id', 'desc')->limit($limit)->get();
+        $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'images'])->orderBy('updated_at', 'desc')->get();
         // $data =  Post::with(['user', 'read', 'vote', 'like', 'authors', 'attachments'])->inRandomOrder()->limit($limit)->get();
         
         $formattedData = [];
@@ -104,8 +107,12 @@ class PostController extends Controller
                     ->where('received_request_user', Auth::user()->id)
                     ->where('connected', 1)->first();
             if($connected1 || $connected2 || $post->user_id == Auth::user()->id){
+                if (count($formattedData) == $limit) {
+                    break;
+                }
                 array_push($formattedData, $post);
             }
+            
         }
         return response()->json([
             'success'=> true,
@@ -208,6 +215,7 @@ class PostController extends Controller
         $this->validate($request, [
             'type' => 'required',
             'title' => 'required',
+            'start_date' => 'required',
         ]);
         $authors = $request->author_id;
         $images = $request->images;
@@ -216,9 +224,7 @@ class PostController extends Controller
 
         DB::beginTransaction();
         try{
-        if($request->start_date){
-            
-        }
+        
         $post = Post::create([
             'user_id' => Auth::user()->id,
             'user_name' => Auth::user()->name,
@@ -241,15 +247,22 @@ class PostController extends Controller
             array_push($publicationAuthors, ['post_id' => $post->id, 'user_id' => $a]);
             
             if($a!=Auth::user()->id){
-                $post = Post::where('id',$post->id)->first();
-                $authUser = Auth::user();
-                $user = User::where('id',$a)->first();
+                // $post = Post::where('id',$post->id)->first();
+                // $authUser = Auth::user();
+                // $user = User::where('id',$a)->first();
                 if($request->type=='project'){
                     $msg = "make you a team member of a project";
                 } else{
-                    $msg = "make you an author";
+                    $msg = "make you an author of a";
                 }
-                $user->notify(new PostNotification($authUser, $post, $msg));
+                // $user->notify(new PostNotification($authUser, $post, $msg));
+                Notify::create([
+                    'type' => 'author',
+                    'notifiable_id' => $a,
+                    'user_id' => Auth::user()->id,
+                    'post_id' => $post->id,
+                    'msg'=> $msg,
+                ]); 
             }
             
         }
@@ -379,7 +392,53 @@ class PostController extends Controller
 
     public function deletePost(Request $request)
     {
+        $comment = Comment::where('post_id', $request->id)->get();
+        if($comment){
+            foreach ($comment as $a) {
+                CommentLike::where('comment_id', $a->id)->delete();
+            }
+        }
+        $commentReply = CommentReply::where('post_id', $request->id)->get();
+        if($comment){
+            foreach ($comment as $a) {
+                CommentReplyLike::where('comment_reply_id', $a->id)->delete();
+            }
+        }
+        $image = Image::where('post_id', $request->id)->first();
+        if($image){
+            Image::where('post_id', $request->id)->delete();
+        }
+        $Author = Author::where('post_id', $request->id)->first();
+        if($Author){
+            Author::where('post_id', $request->id)->delete();
+        }
+        $Read = Read::where('post_id', $request->id)->first();
+        if($Read){
+            Read::where('post_id', $request->id)->delete();
+        }
+        $Like = Like::where('post_id', $request->id)->first();
+        if($Like){
+            Like::where('post_id', $request->id)->delete();
+        }
+        $Comment = Comment::where('post_id', $request->id)->first();
+        if($Comment){
+            Comment::where('post_id', $request->id)->delete();
+        }
+        $CommentReply = CommentReply::where('post_id', $request->id)->first();
+        if($CommentReply){
+            CommentReply::where('post_id', $request->id)->delete();
+        }
+        $Vote = Vote::where('post_id', $request->id)->first();
+        if($Vote){
+            Vote::where('post_id', $request->id)->delete();
+        }
+        $Notification = Notify::where(['post_id'=>$request->id])->first();
+        if($Notification){
+            Notify::where(['post_id'=>$request->id])->delete();
+        }
+
         $delete_post = Post::where('id', $request->id)->delete();
+
         return response()->json(['msg' => 'Deleted Successfully.', 'status' => $delete_post], 200);
     }
 
@@ -397,8 +456,8 @@ class PostController extends Controller
                 'count' => $count,
             ]);
     		$data = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'upVote'=>$request->upVote])->delete();
-            Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'up voted your'])->delete();
-
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'up voted your'])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'msg'=>'up voted your'])->delete();
     		return response()->json([
                 'success'=> true,
                 'data'=> 'del',
@@ -410,14 +469,21 @@ class PostController extends Controller
                 'count' => $count,
             ]);
     		Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->upVote])->delete();
-            Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'down voted your'])->delete();
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'down voted your'])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'msg'=>'down voted your'])->delete();
 
-            $authUser = Auth::user();
-            $postUser = User::where('id', $post->user_id)->first();
+            // $authUser = Auth::user();
+            // $postUser = User::where('id', $post->user_id)->first();
 
             $msg = "up voted your";
-            $postUser->notify(new PostNotification($authUser, $post, $msg));
-            
+            // $postUser->notify(new PostNotification($authUser, $post, $msg));
+            Notify::create([
+                'type' => 'upVote',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+                'msg'=> $msg,
+            ]); 
             $data = Vote::create([
                 'user_id' => Auth::user()->id,
 	    	    'post_id' => $request->id,
@@ -437,12 +503,18 @@ class PostController extends Controller
 	    	    'post_id' => $request->id,
                 'upVote'=> $request->upVote,
             ]);
-            $authUser = Auth::user();
-            $postUser = User::where('id', $post->user_id)->first();
+            // $authUser = Auth::user();
+            // $postUser = User::where('id', $post->user_id)->first();
 
             $msg = "up voted your";
-            $postUser->notify(new PostNotification($authUser, $post, $msg));
-            
+            // $postUser->notify(new PostNotification($authUser, $post, $msg));
+            Notify::create([
+                'type' => 'upVote',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+                'msg'=> $msg,
+            ]); 
             return response()->json([
                 'success'=> true,
                 'data'=> 'up',
@@ -462,7 +534,8 @@ class PostController extends Controller
 
     	if ($checkDownVote) {
     		$data = Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'downVote'=>$request->downVote])->delete();
-            Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'down voted your'])->delete();
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'down voted your'])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'msg'=>'down voted your'])->delete();
             $count = $post->count + 1;
             \Log::info('count');
             \Log::info($count);
@@ -476,7 +549,8 @@ class PostController extends Controller
             ],200);
     	} else if($checkUpVote){
     		Vote::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'upVote'=>$request->downVote])->delete();
-            Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'up voted your'])->delete();
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'up voted your'])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'msg'=>'up voted your'])->delete();
             $count = $post->count - 2;
             Post::where('id', $post->id)->update([
                 'count' => $count,
@@ -487,12 +561,18 @@ class PostController extends Controller
 	    	    'post_id' => $request->id,
                 'downVote'=> $request->downVote,
             ]);
-            $authUser = Auth::user();
-            $postUser = User::where('id', $post->user_id)->first();
+            // $authUser = Auth::user();
+            // $postUser = User::where('id', $post->user_id)->first();
 
             $msg = "down voted your";
-            $postUser->notify(new PostNotification($authUser, $post, $msg));
-            
+            // $postUser->notify(new PostNotification($authUser, $post, $msg));
+            Notify::create([
+                'type' => 'downVote',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+                'msg'=> $msg,
+            ]);
             return response()->json([
                 'success'=> true,
                 'data'=> 'del_up',
@@ -508,12 +588,18 @@ class PostController extends Controller
 	    	    'post_id' => $request->id,
                 'downVote'=> $request->downVote,
             ]);
-            $authUser = Auth::user();
-            $postUser = User::where('id', $post->user_id)->first();
+            // $authUser = Auth::user();
+            // $postUser = User::where('id', $post->user_id)->first();
 
             $msg = "down voted your";
-            $postUser->notify(new PostNotification($authUser, $post, $msg));
-            
+            // $postUser->notify(new PostNotification($authUser, $post, $msg));
+            Notify::create([
+                'type' => 'downVote',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+                'msg'=> $msg,
+            ]);
             return response()->json([
                 'success'=> true,
                 'data'=> 'up',
@@ -545,7 +631,9 @@ class PostController extends Controller
 
     	if ($checkLike) {
     		Like::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id])->delete();
-            Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'liked your'])->delete();
+            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$request->id, 'data->msg'=>'liked your'])->delete();
+            Notify::where(['user_id'=>Auth::user()->id,'post_id'=>$request->id, 'msg'=>'liked your', 'type'=> 'like'])->delete();
+
             $count = $post->count - 1;
             Post::where('id', $post->id)->update([
                 'count' => $count,
@@ -562,11 +650,17 @@ class PostController extends Controller
                 'count' => $count,
             ]);
                     
-            $authUser = Auth::user();
-            $postUser = User::where('id', $post->user_id)->first();
+            // $authUser = Auth::user();
+            // $postUser = User::where('id', $post->user_id)->first();
             $msg = "liked your";
-            $postUser->notify(new PostNotification($authUser, $post, $msg));
-                    
+            // $postUser->notify(new PostNotification($authUser, $post, $msg));
+            Notify::create([
+                'type' => 'like',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $request->id,
+                'msg'=> $msg,
+            ]);        
             return $like;            
         }        
     }

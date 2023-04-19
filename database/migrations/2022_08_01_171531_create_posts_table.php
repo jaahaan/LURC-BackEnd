@@ -26,7 +26,6 @@ class CreatePostsTable extends Migration
             $table->string('affiliation')->nullable();
             $table->string('attachment')->nullable();
             $table->boolean('isApproved')->default(0);
-            $table->string('attachment')->nullable();
             $table->timestamp('conference')->nullable();
             $table->date('publication_date')->nullable();
             $table->date('start_date')->nullable();

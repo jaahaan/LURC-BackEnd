@@ -13,13 +13,29 @@ class TeacherController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function GetTeachers()
+    public function GetTeachers(Request $request)
     {
-        $data=Teacher::get(); 
+        $search = $request->search;
+        $limit = $request->limit? $request->limit : 10;
+    
+
+        if($search){
+            $query =  Teacher::where(function ($queryy) use ($search){
+                $queryy->where('email',  'like', "%$search%")
+                ->orWhere('department', 'like', "%$search%");
+            });
+        } else{
+            $query = Teacher::orderBy('id', 'asc');
+        }
+
+        $data = $query->limit($limit)->orderBy('id', 'asc')->get();
+
+
+        // $data=Teacher::limit($limit)->get(); 
         return response()->json([
             'success'=> true,
             'data'=>$data,
-        ],200);
+        ], 200);
     }
 
     public function AddTeacher(Request $request){

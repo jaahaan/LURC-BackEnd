@@ -17,7 +17,6 @@ class CreateConversationsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('from_id');
             $table->unsignedBigInteger('to_id');
-            // $table->unsignedBigInteger('latestMessage')->nullable();
             $table->unsignedBigInteger('last_msg_from_id')->nullable();
             $table->unsignedBigInteger('last_msg_to_id')->nullable();
             $table->date('last_msg')->nullable();

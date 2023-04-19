@@ -37,8 +37,10 @@ class ProfileController extends Controller
         unset($user['passwordToken']);
         unset($user['token_expired_at']);
         unset($user['honors_and_awards']);
+        unset($user['twoFactor']);
         unset($user['updated_at']);
         unset($user['created_at']);
+
         return response()->json([
             'success'=> true,
             'user'=>$user,
@@ -47,7 +49,22 @@ class ProfileController extends Controller
     public function getProfileInfo($slug)
     {
 
-        $user = User::where('slug', $slug)->with('department', 'user_skills')->first();
+        $user = User::where('slug', $slug)->with( 'user_skills')->first();
+        unset($user['department_id']);
+        unset($user['designation']);
+        unset($user['email']);
+        unset($user['honors_and_awards']);
+        unset($user['image']);
+        unset($user['name']);
+        unset($user['slug']);
+        unset($user['userType']);
+        unset($user['interests']);
+        unset($user['isActive']);
+        unset($user['passwordToken']);
+        unset($user['token_expired_at']);
+        unset($user['twoFactor']);
+        unset($user['updated_at']);
+        unset($user['created_at']);
         $education = Education::where('user_id', $user->id)->orderBy('start_date', 'desc')->get();
         $formattedData = [];
         foreach($education as $value){
@@ -266,7 +283,7 @@ class ProfileController extends Controller
             'file' => 'required|mimes:jpeg,jpg,png',
         ]);
         $picName = time() . '.' . $request->file->extension();
-        $request->file->move(public_path('profileImages'), $picName);
+        $request->file->move(public_path('images'), $picName);
         return $picName;
     }
 

@@ -11,6 +11,8 @@ use App\Models\Comment;
 use App\Models\CommentReply;
 use App\Models\CommentReplyLike;
 use App\Notifications\CommentNotification;
+use App\Models\Notification;
+use App\Models\Notify;
 
 date_default_timezone_set('Asia/Dhaka');
 
@@ -69,17 +71,24 @@ class CommentController extends Controller
         \Log::info('$check');
         \Log::info($checkLike);
         $comment = Comment::where('id',$request->id)->first();
-        $post = Post::where('id',$comment->id)->first();
-
+        // $post = Post::where('id',$comment->post_id)->first();
     	if ($checkLike) {
     		CommentLike::where(['user_id'=>Auth::user()->id,'comment_id'=>$request->id])->delete();
+            Notify::where(['post_id'=>$comment->post_id,'user_id'=>Auth::user()->id, 'comment_id' => $request->id, 'msg'=>'liked your comment'])->delete();
     		return 'deleted';
-            // Notification::where(['data->user_id'=>Auth::user()->id,'data->post_id'=>$post->id, 'data->msg'=>'liked your comment'])->delete();
     	} else{
-            $authUser = Auth::user();
-            $commentUser = $comment->user;
+            // $authUser = Auth::user();
+            // $commentUser = User::where('id', $comment->user_id)->first();
             $msg = "liked your comment";
-            // $commentUser->notify(new PostNotification($authUser, $post, $msg));
+            // $commentUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+            Notify::create([
+                'type' => 'commentLike',
+                'notifiable_id' => $comment->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $comment->post_id,
+	    	    'comment_id' => $request->id,
+                'msg'=> $msg,
+            ]);
             return CommentLike::create([
                 'user_id' => Auth::user()->id,
 	    	    'comment_id' => $request->id,
@@ -117,23 +126,61 @@ class CommentController extends Controller
             'comment' => $request->comment,
         ]);
         $post = Post::where('id',$request->id)->first();
-        $comment_id = $comment->id;
-        $authUser = Auth::user();
-        $postUser = User::where('id', $post->user_id)->first();
+        // $comment_id = $comment->id;
+        // $authUser = Auth::user();
+        // $postUser = User::where('id', $post->user_id)->first();
         $msg = "commented your";
-        $postUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
-        return $comment;
+        if(Auth::user()->id != $post->user_id){
+            // $postUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+            Notify::create([
+                'type' => 'comment',
+                'notifiable_id' => $post->user_id,
+                'user_id' => Auth::user()->id,
+	    	    'post_id' => $comment->post_id,
+	    	    'comment_id' => $comment->id,
+                'msg'=> $msg,
+            ]);
+        }
+        return response()->json([
+            'success'=> true,
+            'data'=>$comment,
+        ],201);
     }
 
     //Comment Reply
     public function addCommentReply(Request $request){
         $post = Post::where('id',$request->post_id)->first();
         $comment = Comment::where('id',$request->comment_id)->first();
-        $comment_id = $comment->id;
-        $authUser = Auth::user();
+        // $comment_id = $comment->id;
+        // $authUser = Auth::user();
         $commentUser = User::where('id', $comment->user_id)->first();
-        $msg = "replied your comment";
-        $commentUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+        $comment_reply = CommentReply::where('comment_id' , $request->comment_id)->where('user_id' , '!=', Auth::user()->id)->get();
+        if($comment->user_id == Auth::user()->id && $comment_reply){
+            foreach ($comment_reply as $a) {
+                // $commentReplyUser = User::where('id', $a->user_id)->first();
+                $msg = "replied a comment you are following";
+                // $commentReplyUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+                Notify::create([
+                    'type' => 'commentReply',
+                    'notifiable_id' => $a->user_id,
+                    'user_id' => Auth::user()->id,
+                    'post_id' => $request->post_id,
+                    'comment_id' => $request->comment_id,
+                    'msg'=> $msg,
+                ]);
+            }
+        } else{
+            $msg = "replied your comment";
+            // $commentUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+            Notify::create([
+                'type' => 'commentReply',
+                'notifiable_id' => $comment->user_id,
+                'user_id' => Auth::user()->id,
+                'post_id' => $request->post_id,
+                'comment_id' => $request->comment_id,
+                'msg'=> $msg,
+            ]);
+        }
         return CommentReply::create([
             'user_id' => Auth::user()->id,
             'post_id' => $request->post_id,
@@ -192,11 +239,27 @@ class CommentController extends Controller
 
         \Log::info('$check');
         \Log::info($checkLike);
-
+        $comment_reply = CommentReply::where('id',$request->id)->first();
+        // $post = Post::where('id',$comment_reply->post_id)->first();
+        // $comment_id = $comment_reply->comment_id;
+        // $authUser = Auth::user();
+        $msg = "liked your reply";
     	if ($checkLike) {
     		CommentReplyLike::where(['user_id'=>Auth::user()->id,'comment_reply_id'=>$request->id])->delete();
+            Notify::where(['post_id'=>$comment_reply->post_id,'user_id'=>Auth::user()->id, 'comment_id' => $comment_reply->comment_id, 'msg'=> $msg])->delete();
     		return 'deleted';
     	} else{
+            
+            // $commentUser = User::where('id', $comment_reply->user_id)->first();
+            // $commentUser->notify(new CommentNotification($authUser, $post, $comment_id, $msg));
+            Notify::create([
+                'type' => 'commentReplyLike',
+                'notifiable_id' => $comment_reply->user_id,
+                'user_id' => Auth::user()->id,
+                'post_id' => $comment_reply->post_id,
+                'comment_id' => $comment_reply->comment_id,
+                'msg'=> $msg,
+            ]);
             return CommentReplyLike::create([
                 'user_id' => Auth::user()->id,
 	    	    'comment_reply_id' => $request->id,

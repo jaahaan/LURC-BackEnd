@@ -70,12 +70,4 @@ class Post extends Model
             ]
         ];
     }
-
-
-    // public function authors(){
-    //     return $this->hasMany('App\Models\Author','post_id');
-    // }
-    // public function attachments(){
-    //     return $this->hasMany('App\Models\Attachment','post_id');
-    // }
 }

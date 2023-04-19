@@ -16,43 +16,39 @@ class HomeController extends Controller
     public function getBanner()
     {
         $data = Banner::get();
-
-
         return response()->json([
             'success'=> true,
             'data'=>$data
-
         ],200);
     }
     public function search(Request $request){
         $search= $request->keyword;
-        $limit = $request->limit? $request->limit : 3;
+        $limit = $request->limit? $request->limit : 10;
+        
+        $query =  User::where(['isActive' => 1]);
 
-        $users = User::where('name', 'like', "%$search%")->limit($limit)->get();
-        
-        
+        if($search){
+            $query->where(function ($queryy) use ($search){
+                $queryy->where('name',  'like', "%$search%")
+                ->orWhere('email', 'like', "%$search%");
+            });
+        }
+
+        $users = $query->limit($limit)->get();
         return response()->json($users);
     }
 
-    public function getUserInfo(Request $request)
-    {
-        // $limit = $request->limit? $request->limit : 3;
-        return User::get();
-    }
+    
     public function getDepartments(Request $request)
     {
         $data = Department::get();
-        // return response()->json([
-        //     'success'=> true,
-        //     'data'=>$data,
-        // ],200);
         return $data;
     }
     public function getPeopleYouMayKnow(Request $request)
     {
-        $limit = $request->limit? $request->limit : 3;
+        $limit = $request->limit? $request->limit : 10;
         $department_id=  $request->department_id;
-        $query = User::with('department');
+        $query = User::with('department')->where(['isActive' => 1]);
         
         // if(!$department_id) {
         //     $query->where('department_id', Auth::user()->department_id)
@@ -83,11 +79,24 @@ class HomeController extends Controller
             $value['status'] = "connect";
             
             if($connected1 || $connected2 || $value->id == Auth::user()->id){
-                array_push($formattedData1, $value);
+                // array_push($formattedData1, $value);
             } else{
-                if (count($formattedData) > 2) {
+                if (count($formattedData) == $limit) {
                     break;
                 }
+                unset($value['about']);
+                unset($value['created_at']);
+                unset($value['department_id']);
+                unset($value['email']);
+                unset($value['honors_and_awards']);
+                unset($value['isActive']);
+                unset($value['passwordToken']);
+                unset($value['status']);
+                unset($value['token_expired_at']);
+                unset($value['twoFactor']);
+                unset($value['updated_at']);
+                unset($value['userType']);
+
                 array_push($formattedData, $value);
             }
         }
@@ -96,14 +105,6 @@ class HomeController extends Controller
             'success'=> true,
             'data'=>$formattedData,
         ],200);
-    }
-    public function admin(Request $request)
-    {
-        //first check if you are loggedin and admin user ...
-        // if(!Auth::check()){
-        //     return redirect('/login');
-        // }
-        return view('admin');
     }
 
 }

@@ -16,17 +16,19 @@ class ConnectionNotification extends Notification
     protected $user;
     protected $connection_id;
     protected $msg;
+    protected $isRequest;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(User $user, $connection_id, $msg)
+    public function __construct(User $user, $connection_id, $msg, $isRequest)
     {
         $this->user = $user;
         $this->connection_id = $connection_id;
         $this->msg = $msg;
+        $this->isRequest = $isRequest;
     }
 
     /**
@@ -56,7 +58,7 @@ class ConnectionNotification extends Notification
             'user_slug' => $this->user->slug,
             'connection_id' => $this->connection_id,
             'msg' => $this->msg,
-            'isRequest' => true
+            'isRequest' => $this->isRequest,
         ];
     }
 }
